@@ -4,12 +4,12 @@
 int renderingData[16][192]; //This stores the frame for rendering
 int arr[3] = {1,1,1};
 
-int Paddles(int y);
-int Paddles(int y) {
+int Paddles(int y,int renderingData[16][192]);
+int Paddles(int y,int renderingData[16][192]) {
     int counter = 6;
 
     while(counter > 0) {
-        int x = 2;
+        int x = 34;
         if (y > 16) {
             y = y % 16;
             x += 32;
@@ -18,15 +18,15 @@ int Paddles(int y) {
             x -= 32;
         }
 
-        addDot(x,y, arr);
+        addDot(x,y, arr, renderingData);
         y++;
         counter--;
     }
     return 0;
 }
 
-int addDot(int x, int y, int col[3]);
-int addDot(int x, int y, int col[3]) {
+int addDot(int x, int y, int col[3], int renderingData[16][192]);
+int addDot(int x, int y, int col[3], int renderingData[16][192]) {
     int i;
     for (i = 0; i <3; i++) {
         if (x < 32) {
@@ -39,18 +39,6 @@ int addDot(int x, int y, int col[3]) {
     return 0;
 }
 
-int setPaddleLocation (int y);
-int setPaddleLocation (int y) {
-    //Input a co-ordinate and store it. 
-    //y range => 0 - 31
-    //if y =  15 and moving down, then shift 32 bits across such that it lines up with it's previous state.
-    if (y>15) {
-        y %= 16;
-        
-    }        
-    return 0;                                 
-}
-
 int rendering(int renderingData[16][192]) {
 
     return 0;
@@ -58,7 +46,7 @@ int rendering(int renderingData[16][192]) {
 
 int clear_row(void);
 int clear_row(void) {
-    for (int i = 0; i<(193); i++) {
+    for (int i = 0; i<(192); i++) {
         gpio_set(GPIOC, GPIO7); //SETS CLOCK HIGH
         gpio_clear(GPIOC, GPIO6);
         gpio_clear(GPIOC, GPIO7);
@@ -203,7 +191,7 @@ int set_row(int num) {
 }
 
 
-int main(){
+int main(void){
     rcc_periph_clock_enable(RCC_GPIOC); //Enable clock for GPIO Port C
     renderingData[1][1]=1;
     //"Opens" 2-8 pins and enables. 
@@ -225,22 +213,29 @@ int main(){
 
     gpio_set(GPIOC, GPIO8); // Sets C8. i.e. THE LATCH. It must be high for you show what is in memory. active low.
 
-    Paddles(3);
+    Paddles(3, renderingData);
     while(1){
-    int i=0; //i is the row
-    int j=0; //j/3 is the column, and there are 3 bits of colour per column
-    for(i = 0; i < 16; i++) {
-        set_row(i); //Select the correct row
-        for(j=0; j<(192); j++) {
-            gpio_clear(GPIOC, GPIO7); //Set clock low
-            if (renderingData[i][j] == 1) { //if we're putting a bit in, set the input to 1
-                gpio_set(GPIOC, GPIO6);
-            } else {                        //if we're not putting a bit in, set the input to 0
-                gpio_clear(GPIOC, GPIO6);
+        int i=0; //i is the row
+        int j=0; //j/3 is the column, and there are 3 bits of colour per column
+        for(i = 0; i < 16; i++) {
+            gpio_clear(GPIOC, GPIO8);
+            set_row(i); //Select the correct row
+            for(j=0; j<(192); j++) {
+                gpio_clear(GPIOC, GPIO7); //Set clock low
+                if (renderingData[i][j] == 1) { //if we're putting a bit in, set the input to 1
+                    gpio_set(GPIOC, GPIO6);
+                } else {                        //if we're not putting a bit in, set the input to 0
+                    gpio_clear(GPIOC, GPIO6);
+                }
+                                     int j=0;
+                gpio_set(GPIOC, GPIO7); //Set clock high
+
             }
-            gpio_set(GPIOC, GPIO7); //Set clock high
+            gpio_set(GPIOC, GPIO8);
+                    for(j=0;j++;j<1e4);
+
         }
-    }
+   
     }
     return 0;
 }

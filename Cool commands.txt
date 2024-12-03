@@ -1,0 +1,2 @@
+module load stm32
+st-flash --reset write <programname>.bin 0x8000000
