@@ -1,8 +1,8 @@
-PROJECT = compileTest
+PROJECT = panel
 BUILD_DIR = bin
 
 SHARED_DIR =
-CFILES = compileTest.c
+CFILES = panel.c
 
 # TODO - you will need to edit these two lines!
 DEVICE=stm32f303ret6
