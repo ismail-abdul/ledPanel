@@ -1,8 +1,16 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
 #include "libopencm3/stm32/rcc.h"   
 #include "libopencm3/stm32/gpio.h"  
+#include "libopencm3/stm32/adc.h" //Needed to convert analogue signals to digital  
+
+
+#define ROW_WORD_SIZE 4
 
 int renderingData[16][192]; //This stores the frame for rendering
 int arr[3] = {1,1,1};
+int binaryBits[ROW_WORD_SIZE];
 
 int Paddles(int y,int renderingData[16][192]);
 int Paddles(int y,int renderingData[16][192]) {
@@ -48,13 +56,14 @@ int clear_row(void);
 int clear_row(void) {
     for (int i = 0; i<(192); i++) {
         gpio_set(GPIOC, GPIO7); //SETS CLOCK HIGH
-        gpio_clear(GPIOC, GPIO6);
-        gpio_clear(GPIOC, GPIO7);
+        gpio_clear(GPIOC, GPIO6);//set register to 0
+        gpio_clear(GPIOC, GPIO7);//SETS THE CLOCK LOW
     }
     return 0;
 }
 
 //We can change this to a binary number and set each line depending on if the digit is a 1 in that position or not
+//Really this should be called select row.
 int set_row(int num);
 int set_row(int num) {
     switch(num) {
@@ -190,6 +199,35 @@ int set_row(int num) {
     return 0;
 }
 
+
+void newBinaryBits(int denary, int bits);
+void newBinaryBits(int denary, int bits) {
+    /* Assume that the number of bits
+    is suffiecient to store the denary number.
+    */
+    assert((1<<bits) >= denary);
+    assert(bits == 4); //2*3 
+
+    for (int exp = bits-1; exp>=0; exp--) {
+        if ((1 << exp) > denary) {
+            //access the binary bit that is (exp+1) from the MSB
+            printf("0");
+            binaryBits[bits-(exp+1)] = 0;
+        } else {
+            printf("1");
+            denary -= 1 << exp;
+            binaryBits[bits-(exp+1)] = 1; 
+        }
+    }
+}
+
+int selectRow(int num) {
+    newBinaryBits(num, ROW_WORD_SIZE);
+    int C2[2] = {};
+    int C3[2]
+    int C4[2]
+    int C5[2]
+}
 
 int main(void){
     rcc_periph_clock_enable(RCC_GPIOC); //Enable clock for GPIO Port C
