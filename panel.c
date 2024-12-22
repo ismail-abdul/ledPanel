@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-#include "libopencm3/stm32/rcc.h"   
-#include "libopencm3/stm32/gpio.h"  
-#include "libopencm3/stm32/adc.h" //Needed to convert analogue signals to digital  
+// #include "libopencm3/stm32/rcc.h"   
+// #include "libopencm3/stm32/gpio.h"  
+// #include "libopencm3/stm32/adc.h" //Needed to convert analogue signals to digital
+
 
 
 #define ROW_WORD_SIZE 4
@@ -223,13 +224,17 @@ void newBinaryBits(int denary, int bits) {
 
 int selectRow(int num) {
     newBinaryBits(num, ROW_WORD_SIZE);
-    int C2[2] = {};
-    int C3[2]
-    int C4[2]
-    int C5[2]
+    int C2[1] = {GPIO5};
+    // int C3[2]
+    // int C4[2]
+    // int C5[2]
 }
 
-int main(void){
+int main(){
+    selectRow(12);
+}
+
+int main2(void){
     rcc_periph_clock_enable(RCC_GPIOC); //Enable clock for GPIO Port C
     renderingData[1][1]=1;
     //"Opens" 2-8 pins and enables. 
