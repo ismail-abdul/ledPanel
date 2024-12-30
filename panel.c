@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
+#include <math.h>
 #include "libopencm3/stm32/rcc.h"   
 #include "libopencm3/stm32/gpio.h"  
 #include "libopencm3/stm32/adc.h" //Needed to convert analogue signals to digital
@@ -10,7 +10,21 @@
 /*
 Coordinate systerm for this game will be zero-indexed, discrete and have it's origin (0,0) be the 
 top and left-most pixel on the pannel. 
-Meaning that the panel we are representing has it */
+Meaning that the panel we are representing has it
+ */
+
+/*
+The "physics" of the game will be quite janky.
+When the ball and paddle collide, their velocities in the y-planve will be additive.
+If the ball is moving down and the paddle is moving down, the velocity of the ball 
+in the y-plane will be the vector addition of their velocities (in the y-plane).
+
+It will be reset when a goal is scored.
+*/
+
+/*
+Player A is on the left side (i.e x = 31) and Player B is on the right side.
+*/
 
 #define ROW_WORD_SIZE 4
 #define PANEL_HEIGHT 32
@@ -19,34 +33,57 @@ Meaning that the panel we are representing has it */
 #define PADDLE_LENGTH 4
 #define JOYSTICK_REGISTER ADC1
 
-#define JOYSTICK_MAX  //Varies. Depends on joystick. Must be a calibrated value for accurate operation.
-#define JOYSTICK_MIN 
+#define JOYSTICK_MAX 4095  //Varies. Depends on joystick. Must be a calibrated value for accurate operation.
+#define JOYSTICK_MIN 0 //For the sake of accuracy, we'll use 4095 as the STM32 Documentation says.  Since the max value of a 12 bit number is 4095.
 
+typedef struct{
+    int velocity;
+    int topLeft_y;
+    int score;
+} Player;
+
+typedef struct{
+    int x;
+    int y;
+} Velocity;
+
+typedef struct{
+    int x;
+    int y;
+    Velocity Velocity;
+} Ball;
+
+Player A;
+Player B;
+
+Ball ball;
 
 int renderingData[16][192]; //This stores the frame for rendering
-int arr[3] = {1,1,1};
 int binaryBits[ROW_WORD_SIZE];
 
 //since the paddle had no middle row or colums, use the top left corner to represent the co-ordinates of every object.  
-int x_PaddleA = 0 ;
+int y_PaddleA = PANEL_HEIGHT/2 - 2 ; //paddle at middle of height of panel
 uint32_t down_PaddleA; 
 uint32_t up_PaddleA;
 
-int x_PaddleB;
+int y_PaddleB = PANEL_HEIGHT/2 - 2;
 uint32_t down_PaddleB; 
 uint32_t up_PaddleB; 
 
 int x_velocity = 0;
 int y_velocity = 0;
 
-bool winner = false;
+String winner = 'X';
 
 //should be reusable for other channels as well.
 //set macros for all the arguements in all the functions that are called.
 
 
-void setup();
-void setup() {
+void initialSetup();
+void initialSetup() {
+
+    //set up inital values for the Ball and 
+
     //set up clocks for our ports
     rcc_periph_clock_enable(RCC_GPIOA); //Enable clock for Joysticks
     rcc_periph_clock_enable(RCC_GPIOC); //Enable clock for LED panel's Row Selection pins, latch, input signal and system clock. 
@@ -79,7 +116,7 @@ void setup() {
     gpio_set_output_options(GPIOC, GPIO_OTYPE_PP, GPIO_OSPEED_100MHZ, GPIO3);   
     gpio_set_output_options(GPIOC, GPIO_OTYPE_PP, GPIO_OSPEED_100MHZ, GPIO2);   
 
-
+    setupJoystickRegisters();
 }
 
 //Returns digital input from the ADC Register dedicated to the joysticks. 
@@ -94,7 +131,7 @@ uint32_t readJoystickChannel(int channel_id){
 }
 
 //Prepares ADC Register 1 to be read from. *Function could be reusable if we had documentation to tell us the type of this expression.
-void setupJoystickRegister(){
+void setupJoystickRegisters(){
 
     /*Steps tp Setup Register for reading from it's channels*/
 
@@ -120,13 +157,109 @@ void readInput() {
 	//listen for register to be ready to be read from
 	//read the value into a global variable
 
-    // setupJoystickRegister();
     up_PaddleA = readJoystickChannel(1);
     down_PaddleA = readJoystickChannel(2);
     up_PaddleB = readJoystickChannel(6);
     down_PaddleB = readJoystickChannel(7);
 
-	printf("Finished reading input from joysticks!")
+    A.velocity = (up_PaddleA < 205) ? 0 : (up_PaddleA < 2049 ? 1 : 2);
+    A.velocity = (down_PaddleA < 205) ? 0 : (down_PaddleA < 2049 ? -1 : -2);
+
+    B.velocity = (up_PaddleB < 205) ? 0 : (up_PaddleB < 2049 ? 1 : 2);
+    B.velocity = (down_PaddleB < 205) ? 0 : (down_PaddleB < 2049 ? -1 : -2);
+
+	printf("Finished reading & interpretting input from joysticks!");
+}
+
+//Overwrite the display data where necessary.
+void update();
+void update() {
+
+    //Move paddles & ensure they stay in bounds
+    A.topLeft_y += A.velocity;
+    B.topLeft_y += B.velocity;
+
+    //Check for paddle co-ordinates that exist "outside of the panel".
+    
+    if (A.topLeft_y + PADDLE_LENGTH - 1 > 31 ){
+        A.topLeft_y  = 31 - PADDLE_LENGTH + 1;
+    } else if (A.topLeft_y < 0) {
+        A.topLeft_y = 0;
+    }
+
+    if (B.topLeft_y + PADDLE_LENGTH -1 > 31) {
+        B.topLeft_y = 31 - PADDLE_LENGTH + 1;
+    } else if (B.topLeft_y < 0) {
+        B.topLeft_y = 0;
+    }
+
+
+    //Check to see if the new ball positions are valid.
+    ball.x += ball.Velocity.x;
+    ball.y += ball.Velocity.y;
+
+    //if there are no collisions.
+    if ((ball.x > 1) && (ball.x<30) && (ball.y >= 1) && (ball.y <=30)) {
+        return;
+    }
+    
+    //condition for hitting roof or floor
+    if (ball.y >= 31){
+        ball.y = 31;
+        ball.Velocity.y = -ball.Velocity.y;
+    } else if (ball.y <= 0) {
+        ball.y = 0;
+        ball.Velocity.y = -ball.Velocity.y;
+    }
+
+    int y_collision = (int)round(ball.v.y/ball.v.x * (30 -ball.x) + ball.y);
+    //Paddle collisions: Check A then B.
+    if ((abs(A.topLeft_y - ball .y) <= 3)){
+
+        if (ball.x == 30) {
+            ball.Velocity.x = -ball.Velocity.x; 
+        } else if (ball.x >= 31) {
+            //Paddle collision should occur.
+            if ((y_collision <= A.topLeft_y) && (y_collision >= (A.topLeft_y - 3))) {
+                ball.x = 31;
+                ball.y = y_collision;
+                ball.Velocity.x = -ball.Velocity.x;
+            } else{
+                //Goal will bee scored against A.
+                B.score += 1;
+                //Goal sequence. 
+                //Reset the ball, diplsay score, and star play again. 
+                //This isn't finished yet.
+            }
+
+        }
+
+    } else if ((abs(B.topLeft_y - ball .y) <= 3)) {
+        
+        if (ball.x == 1) {
+            ball.Velocity.x = -ball.Velocity.x;
+        } else if (ball.x <= 0) {
+            int y_collision = (int)round(ball.v.y/ball.v.x * (1 -ball.x) + ball.y);
+
+            if ((y_collision <= B.topLeft_y) && (y_collision >= (B.topLeft_y - 3))) {
+                ball.x = 1;
+                ball.y = y_collision;
+                ball.Velocity.x = -ball.Velocity.x;
+            } else{
+                //Goal has been scored against A.
+                A.score += 1;
+                //Goal sequence. 
+                //Reset the ball, diplsay score, and star play again. 
+            }
+
+        }
+    }
+     else {
+        //check for the potential of goal?
+        ball.y
+        int y_collision = (int)round(ball.v.y/ball.v.x * (30 -ball.x) + ball.y);
+    }
+
 }
 
 
@@ -170,6 +303,8 @@ int addDot(int x, int y, int col[3], int renderingData[16][192]) {
     }
     return 0;
 }
+
+/*int removeDot() for manipulating objects rather than just clearing the array*/
 
 int rendering(int renderingData[16][192]) {
     return 0;
@@ -322,28 +457,6 @@ int set_row(int num) {
     return 0;
 }
 
-
-void newBinaryBits(int denary, int bits);
-void newBinaryBits(int denary, int bits) {
-    /* Assume that the number of bits
-    is suffiecient to store the denary number.
-    */
-    assert((1<<bits) >= denary);
-    assert(bits == 4); //2*3 
-
-    for (int exp = bits-1; exp>=0; exp--) {
-        if ((1 << exp) > denary) {
-            //access the binary bit that is (exp+1) from the MSB
-            printf("0");
-            binaryBits[bits-(exp+1)] = 0;
-        } else {
-            printf("1");
-            denary -= 1 << exp;
-            binaryBits[bits-(exp+1)] = 1; 
-        }
-    }
-}
-
 int selectRow(int num) {
     newBinaryBits(num, ROW_WORD_SIZE);
     int C2[1] = {GPIO5};
@@ -352,62 +465,21 @@ int selectRow(int num) {
     // int C5[2]
 }
 
-int main(){
+void setupKickOff();
+void setupKickOff(){
 
-
-
-    //Preperation to start game.
-    setup();
-    setupJoystickRegister();
-
-    
 }
 
-int main2(void){
-    rcc_periph_clock_enable(RCC_GPIOC); //Enable clock for GPIO Port C
-    renderingData[1][1]=1;
-    //"Opens" 2-8 pins and enables. 
-    gpio_mode_setup(GPIOC, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO8);
-    gpio_mode_setup(GPIOC, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO7);
-    gpio_mode_setup(GPIOC, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO6);
-    gpio_mode_setup(GPIOC, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO5);
-    gpio_mode_setup(GPIOC, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO4);
-    gpio_mode_setup(GPIOC, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO3);
-    gpio_mode_setup(GPIOC, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO2);
+int main(){
 
-    gpio_set_output_options(GPIOC, GPIO_OTYPE_PP, GPIO_OSPEED_100MHZ, GPIO8);   
-    gpio_set_output_options(GPIOC, GPIO_OTYPE_PP, GPIO_OSPEED_100MHZ, GPIO7);   
-    gpio_set_output_options(GPIOC, GPIO_OTYPE_PP, GPIO_OSPEED_100MHZ, GPIO6);   
-    gpio_set_output_options(GPIOC, GPIO_OTYPE_PP, GPIO_OSPEED_100MHZ, GPIO5);   
-    gpio_set_output_options(GPIOC, GPIO_OTYPE_PP, GPIO_OSPEED_100MHZ, GPIO4);   
-    gpio_set_output_options(GPIOC, GPIO_OTYPE_PP, GPIO_OSPEED_100MHZ, GPIO3);   
-    gpio_set_output_options(GPIOC, GPIO_OTYPE_PP, GPIO_OSPEED_100MHZ, GPIO2);   
+    //Preperation to start game.
+    initialSetup();
 
-    gpio_set(GPIOC, GPIO8); // Sets C8. i.e. THE LATCH. It must be high for you show what is in memory. active low.
-
-    Paddles(3, renderingData);
-    while(1){
-        int i=0; //i is the row
-        int j=0; //j/3 is the column, and there are 3 bits of colour per column
-        for(i = 0; i < 16; i++) {
-            gpio_clear(GPIOC, GPIO8);
-            set_row(i); //Select the correct row
-            for(j=0; j<(192); j++) {
-                gpio_clear(GPIOC, GPIO7); //Set clock low
-                if (renderingData[i][j] == 1) { //if we're putting a bit in, set the input to 1
-                    gpio_set(GPIOC, GPIO6);
-                } else {                        //if we're not putting a bit in, set the input to 0
-                    gpio_clear(GPIOC, GPIO6);
-                }
-                                     int j=0;
-                gpio_set(GPIOC, GPIO7); //Set clock high
-
-            }
-            gpio_set(GPIOC, GPIO8);
-                    for(j=0;j++;j<1e4);
-
-        }
-   
+    while (winner == 'X'){
+        input();
+        update();
+        render();
+        winner = isGameOver();
     }
-    return 0;
+
 }
