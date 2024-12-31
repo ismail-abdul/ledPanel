@@ -36,17 +36,23 @@ Player A is on the left side (i.e x = 31) and Player B is on the right side.
 #define JOYSTICK_MAX 4095  //Varies. Depends on joystick. Must be a calibrated value for accurate operation.
 #define JOYSTICK_MIN 0 //For the sake of accuracy, we'll use 4095 as the STM32 Documentation says.  Since the max value of a 12 bit number is 4095.
 
-typedef struct {
-    int velocity;
-    int y;
-    int score;
-} Player;
+//Array used to store all frame data
+int renderingData[16][192];
 
+//struct to represent the velocity vector
 typedef struct {
     int x;
     int y;
 } Velocity;
 
+//struct to store the Player's paddle data
+typedef struct {
+    Velocity Velocity;
+    int y;
+    int score;
+} Player;
+
+//Struct to represent the ball's data
 typedef struct {
     int x;
     int y;
@@ -158,11 +164,11 @@ void readInput(void) {
     up_paddle_B = readJoystickChannel(6);
     down_paddle_B = readJoystickChannel(7);
 
-    paddle_A.velocity = (up_paddle_A < 205) ? 0 : (up_paddle_A < 2049 ? 1 : 2);
-    paddle_A.velocity = (down_paddle_A < 205) ? 0 : (down_paddle_A < 2049 ? -1 : -2);
+    paddle_A.Velocity.y = (up_paddle_A < 205) ? 0 : (up_paddle_A < 2049 ? 1 : 2);
+    paddle_A.Velocity.y = (down_paddle_A < 205) ? 0 : (down_paddle_A < 2049 ? -1 : -2);
 
-    paddle_B.velocity = (up_paddle_B < 205) ? 0 : (up_paddle_B < 2049 ? 1 : 2);
-    paddle_B.velocity = (down_paddle_B < 205) ? 0 : (down_paddle_B < 2049 ? -1 : -2);
+    paddle_B.Velocity.y = (up_paddle_B < 205) ? 0 : (up_paddle_B < 2049 ? 1 : 2);
+    paddle_B.Velocity.y = (down_paddle_B < 205) ? 0 : (down_paddle_B < 2049 ? -1 : -2);
 
 	printf("Finished reading & interpretting input from joysticks!");
 }
@@ -171,8 +177,8 @@ void readInput(void) {
 void update(void) {
 
     //Move paddles & ensure they stay in bounds
-    paddle_A.y += paddle_A.velocity;
-    paddle_B.y += paddle_B.velocity;
+    paddle_A.y += paddle_A.Velocity.y;
+    paddle_B.y += paddle_B.Velocity.y;
 
     //Check for paddle co-ordinates that exist "outside of the panel".
     
@@ -241,8 +247,8 @@ void input(void){
 	readInput(); //should there be a public variable that should be getting updated? Or should it just be updating the location and speed variables?
 }
 
-int Paddles(int y,int renderingData[16][192]);
-int Paddles(int y,int renderingData[16][192]) {
+int Paddles(int y);
+int Paddles(int y) {
     int counter = 6;
 
     while(counter > 0) {
@@ -255,14 +261,14 @@ int Paddles(int y,int renderingData[16][192]) {
             x -= 32;
         }
 
-        addDot(x,y, arr, renderingData);
+        addDot(x,y, arr, renderingData[][]);
         y++;
         counter--;
     }
     return 0;
 }
 
-int addDot(int x, int y, int col[3], int renderingData[16][192]) {
+int addDot(int x, int y, int col[3]) {
     int i;
     for (i = 0; i <3; i++) {
         if (x < 32) {
@@ -277,9 +283,6 @@ int addDot(int x, int y, int col[3], int renderingData[16][192]) {
 
 /*int removeDot for manipulating objects rather than just clearing the array*/
 
-void rendering(int renderingData[16][192]) {
-
-}
 
 int clear_row(void) {
     for (int i = 0; i<(192); i++) {
@@ -288,6 +291,18 @@ int clear_row(void) {
         gpio_clear(GPIOC, GPIO7);//SETS THE CLOCK LOW
     }
     return 0;
+}
+
+//Function for wiping the screen, useful for end screens or blank screens.
+void clear_screen(void) {
+    for (int j = 0; j < 16; j++) {
+        select_row(j);
+        for (int i = 0; i<(192); i++) {
+            gpio_set(GPIOC, GPIO7); //SETS CLOCK HIGH
+            gpio_clear(GPIOC, GPIO6);
+            gpio_clear(GPIOC, GPIO7); //SETS CLOCK LOW
+        }
+    }
 }
 
 //Function for selecting a row from 0-15
@@ -322,12 +337,37 @@ void select_row(int row) {
     }
 }
 
-int selectRow(int num) {
-    newBinaryBits(num, ROW_WORD_SIZE);
-    int C2[1] = {GPIO5};
-    // int C3[2]
-    // int C4[2]
-    // int C5[2]
+//Removes all data in the renderingData array for the next frame
+void clear_data(void) {
+    for(int j = 0; j < 16; j++) {
+        for(int i = 0, i < 192; i++) {
+            renderingData[j][i] = 0;
+        }
+    }
+}
+
+void renderingFunction(void) {
+    int row = 0;
+
+    while(row < 16) {
+        gpio_clear(GPIOC, GPIO8); //Shut the latch so we can load in the data
+        select_row(row);
+
+        for (int i = 0; i < 192; i++) {
+            gpio_set(GPIOC, GPIO7); //sets clock high
+
+            if (renderingData[row][i] == 0) {
+                gpio_clear(GPIOC, GPIO6); //sets pixel to 0
+            } else {
+                gpio_set(GPIOC, GPIO6); //sets pixel to 1
+            }
+            
+            gpio_clear(GPIOC, GPIO7); //sets clock low
+        }
+
+        gpio_set(GPIOC, GPIO8); //Open the latch to show what is in the memory
+        row++; 
+    }
 }
 
 void onGoal(void) {
