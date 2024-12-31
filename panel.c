@@ -254,10 +254,10 @@ void update(void) {
     }
     
     //Now check for goals
-    if (ball.x == 0){
+    if (ball.x < 0){
         A.score += 1;
         
-    } else if (ball.x == 31) {
+    } else if (ball.x > 30) {
         B.score += 1;
     }
 
