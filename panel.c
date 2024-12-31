@@ -212,45 +212,19 @@ void update(void) {
         ball.Velocity.y = -ball.Velocity.y;
     }
 
-    int y_collision = (int)round(ball.v.y/ball.v.x * (30 - ball.x) + ball.y);
-	
-    //Paddle collisions: Check A then B.
-    if ((abs(A.topLeft_y - ball.y) <= 3)){
-
-        if (ball.x == 30) {
-            ball.Velocity.x = -ball.Velocity.x; 
-        } else if (ball.x >= 31) {
-            //Paddle collision should occur if the ball is located where the paddle is
-            if ((y_collision <= A.topLeft_y) && (y_collision >= (A.topLeft_y - 3))) {
-                ball.x = 31;
-                ball.y = y_collision;
-                ball.Velocity.x = -ball.Velocity.x;
-            } else{
-                ball.x = 31;
-                //ball.y = (int)round(ball.v.y/ball.v.x * (31 -ball.x) + ball.y)
-                //y-velocity & posi already adjusted.
-            }
-
-        }
-
-    } else if ((abs(B.topLeft_y - ball.y) <= 3)) {
-        
-        if (ball.x == 1) {
-            ball.Velocity.x = -ball.Velocity.x;
-        } else if (ball.x <= 0) {
-            int y_collision = (int)round(ball.v.y/ball.v.x * (1 -ball.x) + ball.y);
-
-            if ((y_collision <= B.topLeft_y) && (y_collision >= (B.topLeft_y - 3))) {
-                ball.x = 1;
-                ball.y = y_collision;
-                ball.Velocity.x = -ball.Velocity.x;
-            } else{
-                ball.x = 0;
-                //ball.y = (int)round(ball.v.y/ball.v.x * (31 -ball.x) + ball.y)
-                //y-velocity & posi already adjusted.
-            }
-
-        }
+    if(ball.y <= (A.topLeft_y-1) || ball.y >= (A.topLeft_y + 3)) {
+        if(ball.x == 30 || ball.x == 29) {
+	    ball.x = 28;
+	    ball.Velocity.x = -ball.Velocity.x;
+	    return;
+	}
+    }
+    if(ball.y <= (B.topLeft_y-1) || ball.y >= (B.topLeft_y + 3)) {
+        if(ball.x == 1 || ball.x == 0) {
+	    ball.x = 2;
+	    ball.Velocity.x = -ball.Velocity.x;
+	    return;
+	}
     }
     
     //Now check for goals
