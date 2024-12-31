@@ -59,6 +59,26 @@ typedef struct {
     Velocity Velocity;
 } Ball;
 
+// All prototypes, so that we don't have issues with running code at the wrong time //
+void initialSetup(void);
+uint32_t readJoystickChannel(int channel_id);
+void setupJoystickRegisters(void);
+void readInput(void);
+void update(void);
+void input(void);
+void addDot(int x, int y, int[3] col);
+int Paddles(int y);
+int clear_row(void);
+void clear_screen(void);
+void clear_data(void);
+void select_row(int row);
+void drawPaddleRight(int y);
+void drawPaddleLeft(int y);
+void drawBall(int y, int x);
+void renderingFunction(void);
+void onGoal(void);
+void main(void);
+
 Player paddle_A;
 Player paddle_B;
 
@@ -239,7 +259,7 @@ void update(void) {
 }
 
 
-void input(void){
+void input(void) {
 	inputPreProcessing();
 	readInput(); //should there be a public variable that should be getting updated? Or should it just be updating the location and speed variables?
 }
@@ -308,6 +328,15 @@ void clear_screen(void) {
     }
 }
 
+//Removes all data in the renderingData array for the next frame
+void clear_data(void) {
+    for(int j = 0; j < 16; j++) {
+        for(int i = 0, i < 192; i++) {
+            renderingData[j][i] = 0;
+        }
+    }
+}
+
 //Function for selecting a row from 0-15
 void select_row(int row) {
 
@@ -337,15 +366,6 @@ void select_row(int row) {
         gpio_clear(GPIOC, GPIO2);
     } else {
         gpio_set(GPIOC, GPIO2);
-    }
-}
-
-//Removes all data in the renderingData array for the next frame
-void clear_data(void) {
-    for(int j = 0; j < 16; j++) {
-        for(int i = 0, i < 192; i++) {
-            renderingData[j][i] = 0;
-        }
     }
 }
 
