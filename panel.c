@@ -48,6 +48,7 @@ typedef struct {
 //struct to store the Player's paddle data
 typedef struct {
     Velocity Velocity;
+    int x;
     int y;
     int score;
 } Player;
@@ -81,6 +82,10 @@ void main(void);
 
 Player paddle_A;
 Player paddle_B;
+
+//This is the column the paddle moves up and down
+paddle_A.x = 31;
+paddle_B.x = 0;
 
 Ball ball;
 
@@ -218,14 +223,14 @@ void update(void) {
     ball.x += ball.Velocity.x;
     ball.y += ball.Velocity.y;
 
-    //if there are no collisions.
-    if ((ball.x > 1) && (ball.x < 30) && (ball.y > 0) && (ball.y < 31)) {
+    //if there are no collisions with the walls (THIS IS UNNECESSARY?)
+    if ((ball.x > (paddle_b.x + 1)) && (ball.x < (paddle_A.x - 1)) && (ball.y > paddle_B.x) && (ball.y < paddle_A.x)) {
         return;
     }
     
     //condition for hitting roof or floor
-    if (ball.y > 31) {
-        ball.y = 31;
+    if (ball.y > 30) {
+        ball.y = 30;
         ball.Velocity.y = -ball.Velocity.y;
     } else if (ball.y < 0) {
         ball.y = 0;
@@ -234,16 +239,18 @@ void update(void) {
 
     //Check if the ball hit Player A's paddle
     if(ball.y <= (paddle_A.y-1) || ball.y >= (paddle_A.y + 3)) {
-        if(ball.x == 31 || ball.x == 30) {
-	    ball.x = 29;
+        if(ball.x == paddle_A.x || ball.x == (paddle_A.x - 1)) {
+	    //If it collides, reset the ball to just above the paddle
+	    ball.x = paddle_A.x - 2;
 	    ball.Velocity.x = -ball.Velocity.x;
 	    return; //Return since we no longer need to check for a goal if it was blocked
 	}
     }
     //Check if the ball hit Player B's paddle
     if(ball.y <= (paddle_B.y-1) || ball.y >= (paddle_B.y + 3)) {
-        if(ball.x == 0) {
-	    ball.x = 1;
+        if(ball.x == paddle_B.x) {
+	    //If it collides, reset the ball to just above the paddle
+	    ball.x = paddle_B.x + 1;
 	    ball.Velocity.x = -ball.Velocity.x;
 	    return; //Return since we no longer need to check for a goal if it was blocked
 	}
@@ -279,7 +286,7 @@ void addDot(int x, int y, int[3] col) {
     int i = 0;
     while(i < 3) {
         //Complicated, but this is mathematics to convert from the coordinate system
-        //of the panel into what the panel actually accepts as an input, 16x192
+        //we chose into what the panel actually accepts as an input, 16x192
         renderingData[y][192 - (x + 32*i)] = col[2 - i];
         i++;
     }
@@ -300,7 +307,7 @@ int Paddles(int y) {
             x -= 32;
         }
 
-        addDot(x,y, [1,1,1]);
+        addDot(x, y, [1,1,1]);
         y++;
         counter--;
     }
@@ -375,7 +382,7 @@ void drawPaddleRight(int y) {
 
     //We recursively draw dots to make the paddle
     while(counter >= 0) {
-        addDot(y, x,[1,1,1]);
+        addDot(y, x, [1,1,1]);
         y++;
         counter--;
     }
@@ -393,7 +400,7 @@ void drawPaddleLeft(int y) {
     }
 }
 
-void drawBall(int y, int x) {
+void drawBall(int x, int y) {
     //Add a dot in each pixel to make the ball
     addDot(y,   x,   [1,1,1]);
     addDot(y+1, x,   [1,1,1]);
@@ -402,6 +409,11 @@ void drawBall(int y, int x) {
 }
 
 void renderingFunction(void) {
+    //Draw all the data onto the rendering function.
+    drawPaddleRight(paddle_A.y);
+    drawPaddleLeft(paddle_B.y);
+    drawBall(ball.x, ball.y);
+	
     int row = 0;
 
     while(row < 16) {
@@ -431,7 +443,7 @@ void onGoal(void) {
 
 void main(void) {
 
-    //Preperation to start game.
+    //Preparation to start game.
     initialSetup();
 
     while (winner == 'X') {
