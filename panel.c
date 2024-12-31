@@ -73,14 +73,14 @@ uint32_t up_PaddleB;
 int x_velocity = 0;
 int y_velocity = 0;
 
-String winner = 'X';
+char winner = 'X';
 
 //should be reusable for other channels as well.
 //set macros for all the arguements in all the functions that are called.
 
 
-void initialSetup();
-void initialSetup() {
+void initialSetup(void);
+void initialSetup(void) {
 
     //set up inital values for the Ball and 
 
@@ -131,7 +131,7 @@ uint32_t readJoystickChannel(int channel_id){
 }
 
 //Prepares ADC Register 1 to be read from. *Function could be reusable if we had documentation to tell us the type of this expression.
-void setupJoystickRegisters(){
+void setupJoystickRegisters(void){
 
     /*Steps tp Setup Register for reading from it's channels*/
 
@@ -149,8 +149,8 @@ void setupJoystickRegisters(){
 }
 
 
-void readInput();
-void readInput() {
+void readInput(void);
+void readInput(void) {
 	//define a channel to be looked at
 	//setup channel to be read from
 	//start conversion
@@ -172,8 +172,8 @@ void readInput() {
 }
 
 //Overwrite the display data where necessary.
-void update();
-void update() {
+void update(void);
+void update(void) {
 
     //Move paddles & ensure they stay in bounds
     A.topLeft_y += A.velocity;
@@ -181,14 +181,14 @@ void update() {
 
     //Check for paddle co-ordinates that exist "outside of the panel".
     
-    if (A.topLeft_y + PADDLE_LENGTH - 1 > 31 ){
-        A.topLeft_y  = 31 - PADDLE_LENGTH + 1;
+    if (A.topLeft_y + PADDLE_LENGTH > 32){
+        A.topLeft_y  = 32 - PADDLE_LENGTH;
     } else if (A.topLeft_y < 0) {
         A.topLeft_y = 0;
     }
 
-    if (B.topLeft_y + PADDLE_LENGTH -1 > 31) {
-        B.topLeft_y = 31 - PADDLE_LENGTH + 1;
+    if (B.topLeft_y + PADDLE_LENGTH > 31) {
+        B.topLeft_y = 32 - PADDLE_LENGTH;
     } else if (B.topLeft_y < 0) {
         B.topLeft_y = 0;
     }
@@ -199,27 +199,28 @@ void update() {
     ball.y += ball.Velocity.y;
 
     //if there are no collisions.
-    if ((ball.x > 1) && (ball.x<30) && (ball.y >= 1) && (ball.y <=30)) {
+    if ((ball.x > 1) && (ball.x < 30) && (ball.y > 0) && (ball.y < 31)) {
         return;
     }
     
     //condition for hitting roof or floor
-    if (ball.y >= 31){
+    if (ball.y > 31){
         ball.y = 31;
         ball.Velocity.y = -ball.Velocity.y;
-    } else if (ball.y <= 0) {
+    } else if (ball.y < 0) {
         ball.y = 0;
         ball.Velocity.y = -ball.Velocity.y;
     }
 
-    int y_collision = (int)round(ball.v.y/ball.v.x * (30 -ball.x) + ball.y);
+    int y_collision = (int)round(ball.v.y/ball.v.x * (30 - ball.x) + ball.y);
+	
     //Paddle collisions: Check A then B.
     if ((abs(A.topLeft_y - ball.y) <= 3)){
 
         if (ball.x == 30) {
             ball.Velocity.x = -ball.Velocity.x; 
         } else if (ball.x >= 31) {
-            //Paddle collision should occur.
+            //Paddle collision should occur if the ball is located where the paddle is
             if ((y_collision <= A.topLeft_y) && (y_collision >= (A.topLeft_y - 3))) {
                 ball.x = 31;
                 ball.y = y_collision;
@@ -263,8 +264,8 @@ void update() {
 }
 
 
-void input();
-void input(){
+void input(void);
+void input(void){
 	inputPreProcessing();
 	readInput(); //should there be a public variable that should be getting updated? Or should it just be updating the location and speed variables?
 }
@@ -304,7 +305,7 @@ int addDot(int x, int y, int col[3], int renderingData[16][192]) {
     return 0;
 }
 
-/*int removeDot() for manipulating objects rather than just clearing the array*/
+/*int removeDot for manipulating objects rather than just clearing the array*/
 
 int rendering(int renderingData[16][192]) {
     return 0;
@@ -465,12 +466,13 @@ int selectRow(int num) {
     // int C5[2]
 }
 
-void onGoal();
-void onGoal(){
-    
+
+void onGoal(void);
+void onGoal(void){
+
 }
 
-int main(){
+int main(void){
 
     //Preperation to start game.
     initialSetup();
