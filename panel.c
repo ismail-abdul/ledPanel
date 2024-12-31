@@ -212,18 +212,20 @@ void update(void) {
         ball.Velocity.y = -ball.Velocity.y;
     }
 
+    //Check if the ball hit Player A's paddle
     if(ball.y <= (A.topLeft_y-1) || ball.y >= (A.topLeft_y + 3)) {
         if(ball.x == 31 || ball.x == 30) {
 	    ball.x = 29;
 	    ball.Velocity.x = -ball.Velocity.x;
-	    return;
+	    return; //Return since we no longer need to check for a goal if it was blocked
 	}
     }
+    //Check if the ball hit Player B's paddle
     if(ball.y <= (B.topLeft_y-1) || ball.y >= (B.topLeft_y + 3)) {
         if(ball.x == 0) {
 	    ball.x = 1;
 	    ball.Velocity.x = -ball.Velocity.x;
-	    return;
+	    return; //Return since we no longer need to check for a goal if it was blocked
 	}
     }
     
