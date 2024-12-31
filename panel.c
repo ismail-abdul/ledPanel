@@ -181,14 +181,14 @@ void update(void) {
 
     //Check for paddle co-ordinates that exist "outside of the panel".
     
-    if (A.topLeft_y + PADDLE_LENGTH > 31){
-        A.topLeft_y  = 31 - PADDLE_LENGTH;
+    if (A.topLeft_y + PADDLE_LENGTH > 32){
+        A.topLeft_y  = 32 - PADDLE_LENGTH;
     } else if (A.topLeft_y < 0) {
         A.topLeft_y = 0;
     }
 
     if (B.topLeft_y + PADDLE_LENGTH > 31) {
-        B.topLeft_y = 31 - PADDLE_LENGTH;
+        B.topLeft_y = 32 - PADDLE_LENGTH;
     } else if (B.topLeft_y < 0) {
         B.topLeft_y = 0;
     }
@@ -265,10 +265,10 @@ void update(void) {
 }
 
 
-void input;
-void input{
-	inputPreProcessing;
-	readInput; //should there be a public variable that should be getting updated? Or should it just be updating the location and speed variables?
+void input(void);
+void input(void){
+	inputPreProcessing();
+	readInput(); //should there be a public variable that should be getting updated? Or should it just be updating the location and speed variables?
 }
 
 int Paddles(int y,int renderingData[16][192]);
@@ -467,8 +467,8 @@ int selectRow(int num) {
     // int C5[2]
 }
 
-void setupKickOff;
-void setupKickOff{
+void setupKickOff(void);
+void setupKickOff(void){
 
 }
 
