@@ -215,7 +215,7 @@ void update(void) {
     int y_collision = (int)round(ball.v.y/ball.v.x * (30 - ball.x) + ball.y);
 	
     //Paddle collisions: Check A then B.
-    if ((abs(A.topLeft_y - ball .y) <= 3)){
+    if ((abs(A.topLeft_y - ball.y) <= 3)){
 
         if (ball.x == 30) {
             ball.Velocity.x = -ball.Velocity.x; 
@@ -226,11 +226,9 @@ void update(void) {
                 ball.y = y_collision;
                 ball.Velocity.x = -ball.Velocity.x;
             } else{
-                //Goal will bee scored against A.
-                B.score++;
-                //Goal sequence. 
-                //Reset the ball, diplsay score, and star play again. 
-                //THIS ISNT FINISHED YET.
+                ball.x = 31;
+                //ball.y = (int)round(ball.v.y/ball.v.x * (31 -ball.x) + ball.y)
+                //y-velocity & posi already adjusted.
             }
 
         }
@@ -247,19 +245,20 @@ void update(void) {
                 ball.y = y_collision;
                 ball.Velocity.x = -ball.Velocity.x;
             } else{
-                //Goal has been scored against A.
-                A.score++;
-                //Goal sequence. 
-                //Reset the ball, diplsay score, and star play again.
-		//THIS ISNT FINISHED YET.
+                ball.x = 0;
+                //ball.y = (int)round(ball.v.y/ball.v.x * (31 -ball.x) + ball.y)
+                //y-velocity & posi already adjusted.
             }
 
         }
     }
-     else {
-        //check for the potential of goal?
-        ball.y
-        int y_collision = (int)round(ball.v.y/ball.v.x * (30 -ball.x) + ball.y);
+    
+    //Now check for goals
+    if (ball.x == 0){
+        A.score += 1;
+        
+    } else if (ball.x == 31) {
+        B.score += 1;
     }
 
 }
@@ -467,8 +466,9 @@ int selectRow(int num) {
     // int C5[2]
 }
 
-void setupKickOff(void);
-void setupKickOff(void){
+
+void onGoal(void);
+void onGoal(void){
 
 }
 
