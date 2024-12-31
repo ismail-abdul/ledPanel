@@ -262,7 +262,6 @@ int Paddles(int y,int renderingData[16][192]) {
     return 0;
 }
 
-int addDot(int x, int y, int col[3], int renderingData[16][192]);
 int addDot(int x, int y, int col[3], int renderingData[16][192]) {
     int i;
     for (i = 0; i <3; i++) {
@@ -278,8 +277,8 @@ int addDot(int x, int y, int col[3], int renderingData[16][192]) {
 
 /*int removeDot for manipulating objects rather than just clearing the array*/
 
-int rendering(int renderingData[16][192]) {
-    return 0;
+void rendering(int renderingData[16][192]) {
+
 }
 
 int clear_row(void) {
@@ -291,7 +290,7 @@ int clear_row(void) {
     return 0;
 }
 
-//Function for selecting a row from 0-16
+//Function for selecting a row from 0-15
 void select_row(int row) {
 
     //Bitmasking to select a certain bit and check if the bit is there
@@ -335,7 +334,7 @@ void onGoal(void) {
 
 }
 
-int main(void) {
+void main(void) {
 
     //Preperation to start game.
     initialSetup();
