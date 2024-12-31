@@ -213,15 +213,15 @@ void update(void) {
     }
 
     if(ball.y <= (A.topLeft_y-1) || ball.y >= (A.topLeft_y + 3)) {
-        if(ball.x == 30 || ball.x == 29) {
-	    ball.x = 28;
+        if(ball.x == 31 || ball.x == 30) {
+	    ball.x = 29;
 	    ball.Velocity.x = -ball.Velocity.x;
 	    return;
 	}
     }
     if(ball.y <= (B.topLeft_y-1) || ball.y >= (B.topLeft_y + 3)) {
-        if(ball.x == 1 || ball.x == 0) {
-	    ball.x = 2;
+        if(ball.x == 0) {
+	    ball.x = 1;
 	    ball.Velocity.x = -ball.Velocity.x;
 	    return;
 	}
