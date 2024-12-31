@@ -224,7 +224,7 @@ void update(void) {
     ball.y += ball.Velocity.y;
 
     //if there are no collisions with the walls (THIS IS UNNECESSARY?)
-    if ((ball.x > (paddle_b.x + 1)) && (ball.x < (paddle_A.x - 1)) && (ball.y > paddle_B.x) && (ball.y < paddle_A.x)) {
+    if ((ball.x > (paddle_B.x + 1)) && (ball.x < (paddle_A.x - 1)) && (ball.y > paddle_B.x) && (ball.y < paddle_A.x)) {
         return;
     }
     
