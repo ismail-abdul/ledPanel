@@ -194,7 +194,6 @@ void update(void) {
         paddle_B.y = 0;
     }
 
-
     //Check to see if the new ball positions are valid.
     ball.x += ball.Velocity.x;
     ball.y += ball.Velocity.y;
@@ -233,21 +232,41 @@ void update(void) {
     //Now check for goals
     if (ball.x < 0) {
         paddle_A.score += 1;
-        
     } else if (ball.x > 30) {
         paddle_B.score += 1;
     }
-
+	
 }
 
 
-void input(void);
 void input(void){
 	inputPreProcessing();
 	readInput(); //should there be a public variable that should be getting updated? Or should it just be updating the location and speed variables?
 }
 
-int Paddles(int y);
+//This function accepts coordinates as you would see if you labelled the actual panel, 32x32
+void addDot(int x, int y, int[3] col) {
+
+    //If the check is equal, we don't need to change anything
+    //If the check is different, we need to shift over 92 pixels
+    //to represent the lower half of the panel
+    y %= 16;
+    int check = y % 32;
+    if(y != check) {
+        x += 92;
+    }
+
+    int i = 0;
+    while(i < 3) {
+        //Complicated, but this is mathematics to convert from the coordinate system
+        //of the panel into what the panel actually accepts as an input, 16x192
+        renderingData[y][192 - (x + 32*i)] = col[2 - i];
+        i++;
+    }
+}
+
+/*int removeDot for manipulating objects rather than just clearing the array*/
+
 int Paddles(int y) {
     int counter = 6;
 
@@ -261,28 +280,12 @@ int Paddles(int y) {
             x -= 32;
         }
 
-        addDot(x,y, arr, renderingData[][]);
+        addDot(x,y, [1,1,1]);
         y++;
         counter--;
     }
     return 0;
 }
-
-int addDot(int x, int y, int col[3]) {
-    int i;
-    for (i = 0; i <3; i++) {
-        if (x < 32) {
-            renderingData[y][x + 32*i] = 1;//col[i]; //Colour is put in backwards, so it must be BGR format.
-        } else {
-            renderingData[y][x + 32*i + 96] = 1;//col[i]; //Colour is put in backwards, so it must be BGR format.
-
-        }
-    }
-    return 0;
-}
-
-/*int removeDot for manipulating objects rather than just clearing the array*/
-
 
 int clear_row(void) {
     for (int i = 0; i<(192); i++) {
@@ -344,6 +347,38 @@ void clear_data(void) {
             renderingData[j][i] = 0;
         }
     }
+}
+
+void drawPaddleRight(int y) {
+    int counter = 4; //This is the height of each paddle
+    int x = 0; //This is the column the paddle will travel in
+
+    //We recursively draw dots to make the paddle
+    while(counter >= 0) {
+        addDot(y, x,[1,1,1]);
+        y++;
+        counter--;
+    }
+}
+
+void drawPaddleLeft(int y) {
+    int counter = 4; //This is the height of each paddle
+    int x = 31; //This is the column the paddle will travel in
+
+    //We recursively draw dots to make the paddle
+    while(counter >= 0) {
+        addDot(y, x,[1,1,1]);
+        y++;
+        counter--;
+    }
+}
+
+void drawBall(int y, int x) {
+    //Add a dot in each pixel to make the ball
+    addDot(y,   x,   [1,1,1]);
+    addDot(y+1, x,   [1,1,1]);
+    addDot(y,   x+1, [1,1,1]);
+    addDot(y+1, x+1, [1,1,1])
 }
 
 void renderingFunction(void) {
