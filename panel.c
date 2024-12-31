@@ -76,7 +76,7 @@ void select_row(int row);
 void drawPaddleRight(int y);
 void drawPaddleLeft(int y);
 void drawBall(int y, int x);
-void renderingFunction(void);
+void render(void);
 void onGoal(void);
 void main(void);
 
@@ -408,7 +408,7 @@ void drawBall(int x, int y) {
     addDot(y+1, x+1, [1,1,1])
 }
 
-void renderingFunction(void) {
+void render(void) {
     //Draw all the data onto the rendering function.
     drawPaddleRight(paddle_A.y);
     drawPaddleLeft(paddle_B.y);
