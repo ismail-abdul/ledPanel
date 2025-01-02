@@ -396,16 +396,41 @@ void drawBall(int x, int y) {
     addDot(y+1, x+1, [1,1,1])
 }
 
-void drawHorizontalLine(int x1, int x2) {
+void drawHorizontalLine(int x1, int x2, int y) {
     int counter;
     if(x2 >= x1){
         counter = 0;
-        while(counter > x2-x1) {
-            addDot(x1 + 
+        while(counter >= x2-x1) {
+            addDot(x1 + counter, y, [1,1,1]);
+	    counter++;
 	}
+    } else {
+        counter = 0;
+        while(counter >= x1-x2) {
+            addDot(x2 + counter, y, [1,1,1]);
+	    counter++;
+	}
+    }
 }
 
-//All these digits will imagine a default 3x5 box that they are draw in,
+void drawVerticalLine(int x, int y1, int y2) {
+    int counter;
+    if(y2 >= y1){
+        counter = 0;
+        while(counter >= y2-y1) {
+            addDot(x, y1 + counter, [1,1,1]);
+            counter++;
+	}
+    else {
+        counter = 0;
+        while(counter >= y1-y2) {
+            addDot(x, y2 + counter, [1,1,1]);
+	    counter++;
+	}
+    }
+}
+
+//All these digits will be in a default 3x5 box that they are draw in,
 //but the scale of these can be modified
 void drawZero(int x, int y, int scale) {
 
@@ -418,7 +443,7 @@ void drawZero(int x, int y, int scale) {
     counter2 = 0;
     while(counter1 < 3*scale) {
         while(counter2 < 5*scale) {
-            addDot(x + counter1, y + counter2);
+            addDot(x + counter1, y + counter2, [1,1,1]);
             counter2++;
         }
 	counter1++;
