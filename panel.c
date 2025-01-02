@@ -9,12 +9,12 @@
 
 /*
 Coordinate systerm for this game will be zero-indexed, discrete and have it's origin (0,0) be the 
-top and left-most pixel on the pannel. 
+top and right-most pixel on the panel. 
 Meaning that the panel we are representing has it
  */
 
 /*
-The "physics" of the game will be quite janky.
+The "physics" of the game will be simple.
 When the ball and paddle collide, their velocities in the y-planve will be additive.
 If the ball is moving down and the paddle is moving down, the velocity of the ball 
 in the y-plane will be the vector addition of their velocities (in the y-plane).
@@ -36,25 +36,56 @@ Player A is on the left side (i.e x = 31) and Player B is on the right side.
 #define JOYSTICK_MAX 4095  //Varies. Depends on joystick. Must be a calibrated value for accurate operation.
 #define JOYSTICK_MIN 0 //For the sake of accuracy, we'll use 4095 as the STM32 Documentation says.  Since the max value of a 12 bit number is 4095.
 
-typedef struct{
-    int velocity;
-    int topLeft_y;
-    int score;
-} Player;
+//Array used to store all frame data
+int renderingData[16][192];
 
-typedef struct{
+//struct to represent the velocity vector
+typedef struct {
     int x;
     int y;
 } Velocity;
 
-typedef struct{
+//struct to store the Player's paddle data
+typedef struct {
+    Velocity Velocity;
+    int x;
+    int y;
+    int score;
+} Player;
+
+//Struct to represent the ball's data
+typedef struct {
     int x;
     int y;
     Velocity Velocity;
 } Ball;
 
-Player A;
-Player B;
+// All prototypes, so that we don't have issues with running code at the wrong time //
+void initialSetup(void);
+uint32_t readJoystickChannel(int channel_id);
+void setupJoystickRegisters(void);
+void readInput(void);
+void update(void);
+void input(void);
+void addDot(int x, int y, int[3] col);
+int Paddles(int y);
+int clear_row(void);
+void clear_screen(void);
+void clear_data(void);
+void select_row(int row);
+void drawPaddleRight(int y);
+void drawPaddleLeft(int y);
+void drawBall(int y, int x);
+void render(void);
+void onGoal(void);
+void main(void);
+
+Player paddle_A;
+Player paddle_B;
+
+//This is the column the paddle moves up and down
+paddle_A.x = 31;
+paddle_B.x = 0;
 
 Ball ball;
 
@@ -62,13 +93,13 @@ int renderingData[16][192]; //This stores the frame for rendering
 int binaryBits[ROW_WORD_SIZE];
 
 //since the paddle had no middle row or colums, use the top left corner to represent the co-ordinates of every object.  
-int y_PaddleA = PANEL_HEIGHT/2 - 2 ; //paddle at middle of height of panel
-uint32_t down_PaddleA; 
-uint32_t up_PaddleA;
+int y_paddle_y = PANEL_HEIGHT/2 - 2 ; //paddle at middle of height of panel
+uint32_t down_paddle_A; 
+uint32_t up_paddle_A;
 
 int y_PaddleB = PANEL_HEIGHT/2 - 2;
-uint32_t down_PaddleB; 
-uint32_t up_PaddleB; 
+uint32_t down_paddle_B; 
+uint32_t up_paddle_B; 
 
 int x_velocity = 0;
 int y_velocity = 0;
@@ -78,8 +109,6 @@ char winner = 'X';
 //should be reusable for other channels as well.
 //set macros for all the arguements in all the functions that are called.
 
-
-void initialSetup(void);
 void initialSetup(void) {
 
     //set up inital values for the Ball and 
@@ -120,7 +149,7 @@ void initialSetup(void) {
 }
 
 //Returns digital input from the ADC Register dedicated to the joysticks. 
-uint32_t readJoystickChannel(int channel_id){
+uint32_t readJoystickChannel(int channel_id) {
     uint8_t channelArray[1] = {channel_id};
     adc_set_regular_sequence(JOYSTICK_REGISTER, 1, channelArray);  //Set up the channel
     adc_start_conversion_regular(JOYSTICK_REGISTER);  //Start converting the analogue signal
@@ -131,7 +160,7 @@ uint32_t readJoystickChannel(int channel_id){
 }
 
 //Prepares ADC Register 1 to be read from. *Function could be reusable if we had documentation to tell us the type of this expression.
-void setupJoystickRegisters(void){
+void setupJoystickRegisters(void) {
 
     /*Steps tp Setup Register for reading from it's channels*/
 
@@ -148,8 +177,6 @@ void setupJoystickRegisters(void){
     adc_power_on(ADC1);  //Finished setup, turn on ADC register 1
 }
 
-
-void readInput(void);
 void readInput(void) {
 	//define a channel to be looked at
 	//setup channel to be read from
@@ -157,121 +184,117 @@ void readInput(void) {
 	//listen for register to be ready to be read from
 	//read the value into a global variable
 
-    up_PaddleA = readJoystickChannel(1);
-    down_PaddleA = readJoystickChannel(2);
-    up_PaddleB = readJoystickChannel(6);
-    down_PaddleB = readJoystickChannel(7);
+    up_paddle_A = readJoystickChannel(1);
+    down_paddle_A = readJoystickChannel(2);
+    up_paddle_B = readJoystickChannel(6);
+    down_paddle_B = readJoystickChannel(7);
 
-    A.velocity = (up_PaddleA < 205) ? 0 : (up_PaddleA < 2049 ? 1 : 2);
-    A.velocity = (down_PaddleA < 205) ? 0 : (down_PaddleA < 2049 ? -1 : -2);
+    paddle_A.Velocity.y = (up_paddle_A < 205) ? 0 : (up_paddle_A < 2049 ? 1 : 2);
+    paddle_A.Velocity.y = (down_paddle_A < 205) ? 0 : (down_paddle_A < 2049 ? -1 : -2);
 
-    B.velocity = (up_PaddleB < 205) ? 0 : (up_PaddleB < 2049 ? 1 : 2);
-    B.velocity = (down_PaddleB < 205) ? 0 : (down_PaddleB < 2049 ? -1 : -2);
+    paddle_B.Velocity.y = (up_paddle_B < 205) ? 0 : (up_paddle_B < 2049 ? 1 : 2);
+    paddle_B.Velocity.y = (down_paddle_B < 205) ? 0 : (down_paddle_B < 2049 ? -1 : -2);
 
 	printf("Finished reading & interpretting input from joysticks!");
 }
 
 //Overwrite the display data where necessary.
-void update(void);
 void update(void) {
 
     //Move paddles & ensure they stay in bounds
-    A.topLeft_y += A.velocity;
-    B.topLeft_y += B.velocity;
+    paddle_A.y += paddle_A.Velocity.y;
+    paddle_B.y += paddle_B.Velocity.y;
 
     //Check for paddle co-ordinates that exist "outside of the panel".
     
-    if (A.topLeft_y + PADDLE_LENGTH > 32){
-        A.topLeft_y  = 32 - PADDLE_LENGTH;
-    } else if (A.topLeft_y < 0) {
-        A.topLeft_y = 0;
+    if (paddle_A.y + PADDLE_LENGTH > 32) {
+        paddle_A.y  = 32 - PADDLE_LENGTH;
+    } else if (paddle_A.y < 0) {
+        paddle_A.y = 0;
     }
 
-    if (B.topLeft_y + PADDLE_LENGTH > 31) {
-        B.topLeft_y = 32 - PADDLE_LENGTH;
-    } else if (B.topLeft_y < 0) {
-        B.topLeft_y = 0;
+    if (paddle_B.y + PADDLE_LENGTH > 31) {
+        paddle_B.y = 32 - PADDLE_LENGTH;
+    } else if (paddle_B.y < 0) {
+        paddle_B.y = 0;
     }
-
 
     //Check to see if the new ball positions are valid.
     ball.x += ball.Velocity.x;
     ball.y += ball.Velocity.y;
 
-    //if there are no collisions.
-    if ((ball.x > 1) && (ball.x < 30) && (ball.y > 0) && (ball.y < 31)) {
+    //if there are no collisions with the walls (THIS IS UNNECESSARY?)
+    if ((ball.x > (paddle_B.x + 1)) && (ball.x < (paddle_A.x - 1)) && (ball.y > paddle_B.x) && (ball.y < paddle_A.x)) {
         return;
     }
     
     //condition for hitting roof or floor
-    if (ball.y > 31){
-        ball.y = 31;
+    if (ball.y > 30) {
+        ball.y = 30;
         ball.Velocity.y = -ball.Velocity.y;
     } else if (ball.y < 0) {
         ball.y = 0;
         ball.Velocity.y = -ball.Velocity.y;
     }
 
-    int y_collision = (int)round(ball.v.y/ball.v.x * (30 - ball.x) + ball.y);
-	
-    //Paddle collisions: Check A then B.
-    if ((abs(A.topLeft_y - ball.y) <= 3)){
-
-        if (ball.x == 30) {
-            ball.Velocity.x = -ball.Velocity.x; 
-        } else if (ball.x >= 31) {
-            //Paddle collision should occur if the ball is located where the paddle is
-            if ((y_collision <= A.topLeft_y) && (y_collision >= (A.topLeft_y - 3))) {
-                ball.x = 31;
-                ball.y = y_collision;
-                ball.Velocity.x = -ball.Velocity.x;
-            } else{
-                ball.x = 31;
-                //ball.y = (int)round(ball.v.y/ball.v.x * (31 -ball.x) + ball.y)
-                //y-velocity & posi already adjusted.
-            }
-
-        }
-
-    } else if ((abs(B.topLeft_y - ball.y) <= 3)) {
-        
-        if (ball.x == 1) {
-            ball.Velocity.x = -ball.Velocity.x;
-        } else if (ball.x <= 0) {
-            int y_collision = (int)round(ball.v.y/ball.v.x * (1 -ball.x) + ball.y);
-
-            if ((y_collision <= B.topLeft_y) && (y_collision >= (B.topLeft_y - 3))) {
-                ball.x = 1;
-                ball.y = y_collision;
-                ball.Velocity.x = -ball.Velocity.x;
-            } else{
-                ball.x = 0;
-                //ball.y = (int)round(ball.v.y/ball.v.x * (31 -ball.x) + ball.y)
-                //y-velocity & posi already adjusted.
-            }
-
-        }
+    //Check if the ball hit Player A's paddle
+    if(ball.y <= (paddle_A.y-1) || ball.y >= (paddle_A.y + 3)) {
+        if(ball.x == paddle_A.x || ball.x == (paddle_A.x - 1)) {
+	    //If it collides, reset the ball to just above the paddle
+	    ball.x = paddle_A.x - 2;
+	    ball.Velocity.x = -ball.Velocity.x;
+	    return; //Return since we no longer need to check for a goal if it was blocked
+	}
+    }
+    //Check if the ball hit Player B's paddle
+    if(ball.y <= (paddle_B.y-1) || ball.y >= (paddle_B.y + 3)) {
+        if(ball.x == paddle_B.x) {
+	    //If it collides, reset the ball to just above the paddle
+	    ball.x = paddle_B.x + 1;
+	    ball.Velocity.x = -ball.Velocity.x;
+	    return; //Return since we no longer need to check for a goal if it was blocked
+	}
     }
     
     //Now check for goals
-    if (ball.x < 0){
-        A.score += 1;
-        
+    if (ball.x < 0) {
+        paddle_A.score += 1;
     } else if (ball.x > 30) {
-        B.score += 1;
+        paddle_B.score += 1;
     }
-
+	
 }
 
 
-void input(void);
-void input(void){
+void input(void) {
 	inputPreProcessing();
 	readInput(); //should there be a public variable that should be getting updated? Or should it just be updating the location and speed variables?
 }
 
-int Paddles(int y,int renderingData[16][192]);
-int Paddles(int y,int renderingData[16][192]) {
+//This function accepts coordinates as you would see if you labelled the actual panel, 32x32
+void addDot(int x, int y, int[3] col) {
+
+    //If the check is equal, we don't need to change anything
+    //If the check is different, we need to shift over 92 pixels
+    //to represent the lower half of the panel
+    y %= 16;
+    int check = y % 32;
+    if(y != check) {
+        x += 92;
+    }
+
+    int i = 0;
+    while(i < 3) {
+        //Complicated, but this is mathematics to convert from the coordinate system
+        //we chose into what the panel actually accepts as an input, 16x192
+        renderingData[y][192 - (x + 32*i)] = col[2 - i];
+        i++;
+    }
+}
+
+/*int removeDot for manipulating objects rather than just clearing the array*/
+
+int Paddles(int y) {
     int counter = 6;
 
     while(counter > 0) {
@@ -284,34 +307,13 @@ int Paddles(int y,int renderingData[16][192]) {
             x -= 32;
         }
 
-        addDot(x,y, arr, renderingData);
+        addDot(x, y, [1,1,1]);
         y++;
         counter--;
     }
     return 0;
 }
 
-int addDot(int x, int y, int col[3], int renderingData[16][192]);
-int addDot(int x, int y, int col[3], int renderingData[16][192]) {
-    int i;
-    for (i = 0; i <3; i++) {
-        if (x < 32) {
-            renderingData[y][x + 32*i] = 1;//col[i]; //Colour is put in backwards, so it must be BGR format.
-        } else {
-            renderingData[y][x + 32*i + 96] = 1;//col[i]; //Colour is put in backwards, so it must be BGR format.
-
-        }
-    }
-    return 0;
-}
-
-/*int removeDot for manipulating objects rather than just clearing the array*/
-
-int rendering(int renderingData[16][192]) {
-    return 0;
-}
-
-int clear_row(void);
 int clear_row(void) {
     for (int i = 0; i<(192); i++) {
         gpio_set(GPIOC, GPIO7); //SETS CLOCK HIGH
@@ -321,167 +323,133 @@ int clear_row(void) {
     return 0;
 }
 
-//We can change this to a binary number and set each line depending on if the digit is a 1 in that position or not
-//Really this should be called select row.
-int set_row(int num);
-int set_row(int num) {
-    switch(num) {
-        case 0:
-            {gpio_clear(GPIOC, GPIO5); 
-            gpio_clear(GPIOC, GPIO4);
-            gpio_clear(GPIOC, GPIO3);
-            gpio_clear(GPIOC, GPIO2);}
-            
-            break;
-
-        case 1:
-            {gpio_clear(GPIOC, GPIO5); 
-            gpio_clear(GPIOC, GPIO4);
-            gpio_clear(GPIOC, GPIO3);
-            gpio_set(GPIOC, GPIO2);}
-            
-            break;
-
-        case 2:
-            {gpio_clear(GPIOC, GPIO5); 
-            gpio_clear(GPIOC, GPIO4);
-            gpio_set(GPIOC, GPIO3);
-            gpio_clear(GPIOC, GPIO2);}
-            
-            break;
-
-        case 3:
-            {gpio_clear(GPIOC, GPIO5); 
-            gpio_clear(GPIOC, GPIO4);
-            gpio_set(GPIOC, GPIO3);
-            gpio_set(GPIOC, GPIO2);}
-            
-            break;
-
-        case 4:
-            {gpio_clear(GPIOC, GPIO5); 
-            gpio_set(GPIOC, GPIO4);
-            gpio_clear(GPIOC, GPIO3);
-            gpio_clear(GPIOC, GPIO2);}
-            
-            break;
-
-        case 5:
-            {gpio_clear(GPIOC, GPIO5); 
-            gpio_set(GPIOC, GPIO4);
-            gpio_clear(GPIOC, GPIO3);
-            gpio_set(GPIOC, GPIO2);}
-            
-            break;
-
-        case 6:
-            {gpio_clear(GPIOC, GPIO5); 
-            gpio_set(GPIOC, GPIO4);
-            gpio_set(GPIOC, GPIO3);
-            gpio_clear(GPIOC, GPIO2);}
-            
-            break;
-
-        case 7:
-            {gpio_clear(GPIOC, GPIO5); 
-            gpio_set(GPIOC, GPIO4);
-            gpio_set(GPIOC, GPIO3);
-            gpio_set(GPIOC, GPIO2);}
-            
-            break;
-        
-        case 8:
-            {gpio_set(GPIOC, GPIO5); 
-            gpio_clear(GPIOC, GPIO4);
-            gpio_clear(GPIOC, GPIO3);
-            gpio_clear(GPIOC, GPIO2);}
-            
-            break;
-
-        case 9:
-           { gpio_set(GPIOC, GPIO5); 
-            gpio_clear(GPIOC, GPIO4);
-            gpio_clear(GPIOC, GPIO3);
-            gpio_set(GPIOC, GPIO2);}
-            
-            break;
-
-        case 10:
-            {gpio_set(GPIOC, GPIO5); 
-            gpio_clear(GPIOC, GPIO4);
-            gpio_set(GPIOC, GPIO3);
-            gpio_clear(GPIOC, GPIO2);}
-            
-            break;
-
-        case 11:
-            {gpio_set(GPIOC, GPIO5); 
-            gpio_clear(GPIOC, GPIO4);
-            gpio_set(GPIOC, GPIO3);
-            gpio_set(GPIOC, GPIO2);}
-            
-            break;
-
-        case 12:
-            {gpio_set(GPIOC, GPIO5); 
-            gpio_set(GPIOC, GPIO4);
-            gpio_clear(GPIOC, GPIO3);
-            gpio_clear(GPIOC, GPIO2);}
-            
-            break;
-
-        case 13:
-            {gpio_set(GPIOC, GPIO5); 
-            gpio_set(GPIOC, GPIO4);
-            gpio_clear(GPIOC, GPIO3);
-            gpio_set(GPIOC, GPIO2);}
-            
-            break;
-
-        case 14:
-            {gpio_set(GPIOC, GPIO5); 
-            gpio_set(GPIOC, GPIO4);
-            gpio_set(GPIOC, GPIO3);
-            gpio_clear(GPIOC, GPIO2);}
-            
-            break;
-
-        case 15:
-            {gpio_set(GPIOC, GPIO5); 
-            gpio_set(GPIOC, GPIO4);
-            gpio_set(GPIOC, GPIO3);
-            gpio_set(GPIOC, GPIO2);}
-            
-            break;
-        
+//Function for wiping the screen, useful for end screens or blank screens.
+void clear_screen(void) {
+    for (int j = 0; j < 16; j++) {
+        select_row(j);
+        for (int i = 0; i<(192); i++) {
+            gpio_set(GPIOC, GPIO7); //SETS CLOCK HIGH
+            gpio_clear(GPIOC, GPIO6);
+            gpio_clear(GPIOC, GPIO7); //SETS CLOCK LOW
+        }
     }
-    return 0;
 }
 
-int selectRow(int num) {
-    newBinaryBits(num, ROW_WORD_SIZE);
-    int C2[1] = {GPIO5};
-    // int C3[2]
-    // int C4[2]
-    // int C5[2]
+//Removes all data in the renderingData array for the next frame
+void clear_data(void) {
+    for(int j = 0; j < 16; j++) {
+        for(int i = 0, i < 192; i++) {
+            renderingData[j][i] = 0;
+        }
+    }
 }
 
+//Function for selecting a row from 0-15
+void select_row(int row) {
 
-void onGoal(void);
-void onGoal(void){
+    //Bitmasking to select a certain bit and check if the bit is there
+    int bit_0 = row & (1 << 3);
+    int bit_1 = row & (1 << 2);
+    int bit_2 = row & (1 << 1);
+    int bit_3 = row & 1;
+
+    //Checking the specific bit and using it to select the row
+    if (bit_0 == 0) {
+        gpio_clear(GPIOC, GPIO5);
+    } else {
+        gpio_set(GPIOC, GPIO5);
+    }
+    if (bit_1 == 0) {
+        gpio_clear(GPIOC, GPIO4);
+    } else {
+        gpio_set(GPIOC, GPIO4);
+    }
+    if (bit_2 == 0) {
+        gpio_clear(GPIOC, GPIO3);
+    } else {
+        gpio_set(GPIOC, GPIO3);
+    }
+    if (bit_3 == 0) {
+        gpio_clear(GPIOC, GPIO2);
+    } else {
+        gpio_set(GPIOC, GPIO2);
+    }
+}
+
+void drawPaddleRight(int y) {
+    int counter = 4; //This is the height of each paddle
+    int x = 0; //This is the column the paddle will travel in
+
+    //We recursively draw dots to make the paddle
+    while(counter >= 0) {
+        addDot(y, x, [1,1,1]);
+        y++;
+        counter--;
+    }
+}
+
+void drawPaddleLeft(int y) {
+    int counter = 4; //This is the height of each paddle
+    int x = 31; //This is the column the paddle will travel in
+
+    //We recursively draw dots to make the paddle
+    while(counter >= 0) {
+        addDot(y, x,[1,1,1]);
+        y++;
+        counter--;
+    }
+}
+
+void drawBall(int x, int y) {
+    //Add a dot in each pixel to make the ball
+    addDot(y,   x,   [1,1,1]);
+    addDot(y+1, x,   [1,1,1]);
+    addDot(y,   x+1, [1,1,1]);
+    addDot(y+1, x+1, [1,1,1])
+}
+
+void render(void) {
+    //Draw all the data onto the rendering function.
+    drawPaddleRight(paddle_A.y);
+    drawPaddleLeft(paddle_B.y);
+    drawBall(ball.x, ball.y);
+	
+    int row = 0;
+
+    while(row < 16) {
+        gpio_clear(GPIOC, GPIO8); //Shut the latch so we can load in the data
+        select_row(row);
+
+        for (int i = 0; i < 192; i++) {
+            gpio_set(GPIOC, GPIO7); //sets clock high
+
+            if (renderingData[row][i] == 0) {
+                gpio_clear(GPIOC, GPIO6); //sets pixel to 0
+            } else {
+                gpio_set(GPIOC, GPIO6); //sets pixel to 1
+            }
+            
+            gpio_clear(GPIOC, GPIO7); //sets clock low
+        }
+
+        gpio_set(GPIOC, GPIO8); //Open the latch to show what is in the memory
+        row++; 
+    }
+}
+
+void onGoal(void) {
 
 }
 
-int main(void){
+void main(void) {
 
-    //Preperation to start game.
+    //Preparation to start game.
     initialSetup();
 
-    while (winner == 'X'){
+    while (winner == 'X') {
         input();
         update();
         render();
         winner = isGameOver();
     }
-
 }
