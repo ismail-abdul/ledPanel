@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <time.h>
+#include <assert.h>
+#include <stdint.h>
 #include "libopencm3/stm32/rcc.h"   
 #include "libopencm3/stm32/gpio.h"  
 #include "libopencm3/stm32/adc.h" //Needed to convert analogue signals to digital
@@ -38,6 +41,8 @@ Player A is on the left side (i.e x = 31) and Player B is on the right side.
 
 //Array used to store all frame data
 int renderingData[16][192];
+int WHITE_BITS[3] = {1,1,1}; //Used as an argument when wanting to display a white pixel on the LED Panel
+
 
 //struct to represent the velocity vector
 typedef struct {
@@ -64,22 +69,26 @@ typedef struct {
 void initialSetup(void);
 uint32_t readJoystickChannel(int channel_id);
 void setupJoystickRegisters(void);
+void setupBall(void);
+int randInt (int min, int max);
+void setupPaddles(void);
+
 void readInput(void);
+
 void update(void);
-void input(void);
-void addDot(int x, int y, int[3] col);
-int Paddles(int y);
+void addDot(int x, int y, int col[3]);
 int clear_row(void);
 void clear_screen(void);
 void clear_data(void);
 void select_row(int row);
+
 void drawPaddleRight(int y);
 void drawPaddleLeft(int y);
 void drawBall(int x, int y);
 void drawHorizontalLine(int x1, int x2, int y);
 void drawVerticalLine(int x, int y1, int y2);
 void drawHorizontalThicken(int scale, int x1, int x2, int y);
-void drawVerticalThicken(int scale, , int x, int y1, int y2);
+void drawVerticalThicken(int scale, int x, int y1, int y2);
 void drawZero(int x, int y, int scale);
 void drawOne(int x, int y, int scale);
 void drawTwo(int x, int y, int scale);
@@ -90,8 +99,13 @@ void drawSix(int x, int y, int scale);
 void drawSeven(int x, int y, int scale);
 void drawEight(int x, int y, int scale);
 void drawNine(int x, int y, int scale);
+void drawScores(void);
+
 void render(void);
+
 void onGoal(void);
+char isGameOver(void);
+void onGameOver(void);
 void main(void);
 
 Player paddle_A;
@@ -119,13 +133,12 @@ int x_velocity = 0;
 int y_velocity = 0;
 
 char winner = 'X';
+int justScored = 0;
 
 //should be reusable for other channels as well.
 //set macros for all the arguements in all the functions that are called.
 
 void initialSetup(void) {
-
-    //set up inital values for the Ball and 
 
     //set up clocks for our ports
     rcc_periph_clock_enable(RCC_GPIOA); //Enable clock for Joysticks
@@ -159,7 +172,10 @@ void initialSetup(void) {
     gpio_set_output_options(GPIOC, GPIO_OTYPE_PP, GPIO_OSPEED_100MHZ, GPIO3);   
     gpio_set_output_options(GPIOC, GPIO_OTYPE_PP, GPIO_OSPEED_100MHZ, GPIO2);   
 
+    //set up inital values for the Ball and paddles & prepare joystick registers
     setupJoystickRegisters();
+    setupBall();
+    setupPaddles();
 }
 
 //Returns digital input from the ADC Register dedicated to the joysticks. 
@@ -189,6 +205,25 @@ void setupJoystickRegisters(void) {
     adc_set_resolution(JOYSTICK_REGISTER, ADC_CFGR1_RES_12_BIT);  //Get a good resolution
 
     adc_power_on(ADC1);  //Finished setup, turn on ADC register 1
+}
+
+int randInt (int max, int min) {
+    srand(time(NULL));
+    int value = min + (rand() % (max - min + 1) );
+    assert(value <= max && value >= min);
+    return value;
+}
+
+void setupBall(void){
+    ball.Velocity.x = randInt(0,2) - 1;
+    ball.Velocity.y = randInt(0,2) - 1;
+    ball.x = randInt(floor(3/4*PANEL_WIDTH), PANEL_WIDTH - floor(3/4*PANEL_WIDTH));
+    ball.y = randInt(PANEL_HEIGHT - 2, PANEL_HEIGHT + 2);
+}
+
+void setupPaddles(void) {
+    paddle_A.topLeft_y = PANEL_HEIGHT/2 - 2;
+    paddle_B.topLeft_y = paddle_A.topLeft_y;
 }
 
 void readInput(void) {
@@ -269,21 +304,24 @@ void update(void) {
     }
     
     //Now check for goals
-    if (ball.x < 0) {
+    if (ball.x == 0) {
         paddle_A.score += 1;
-    } else if (ball.x > 30) {
+        justScored = 1;
+        onGoal();
+    } else if (ball.x == 30) {
         paddle_B.score += 1;
+        justScored = 1;
+        onGoal();
+        return;
+    } else {
+        printf("Unexpected vales for ball co-ordinates");
+        assert(1 == 0);
     }
-	
-}
 
-void input(void) {
-	inputPreProcessing();
-	readInput(); //should there be a public variable that should be getting updated? Or should it just be updating the location and speed variables?
 }
 
 //This function accepts coordinates as you would see if you labelled the actual panel, 32x32
-void addDot(int x, int y, int[3] col) {
+void addDot(int x, int y, int col[]) {
 
     //If the check is equal, we don't need to change anything
     //If the check is different, we need to shift over 92 pixels
@@ -374,7 +412,7 @@ void drawPaddleRight(int y) {
 
     //We recursively draw dots to make the paddle
     while(counter >= 0) {
-        addDot(y, x, [1,1,1]);
+        addDot(y, x, WHITE_BITS);
         y++;
         counter--;
     }
@@ -386,7 +424,7 @@ void drawPaddleLeft(int y) {
 
     //We recursively draw dots to make the paddle
     while(counter >= 0) {
-        addDot(y, x,[1,1,1]);
+        addDot(y, x,WHITE_BITS);
         y++;
         counter--;
     }
@@ -394,10 +432,10 @@ void drawPaddleLeft(int y) {
 
 void drawBall(int x, int y) {
     //Add a dot in each pixel to make the ball
-    addDot(y,   x,   [1,1,1]);
-    addDot(y+1, x,   [1,1,1]);
-    addDot(y,   x+1, [1,1,1]);
-    addDot(y+1, x+1, [1,1,1])
+    addDot(y,   x,   WHITE_BITS);
+    addDot(y+1, x,   WHITE_BITS);
+    addDot(y,   x+1, WHITE_BITS);
+    addDot(y+1, x+1, WHITE_BITS)
 }
 
 void drawHorizontalLine(int x1, int x2, int y) {
@@ -405,13 +443,13 @@ void drawHorizontalLine(int x1, int x2, int y) {
     if(x2 >= x1){
         counter = 0;
         while(counter >= x2-x1) {
-            addDot(x1 + counter, y, [1,1,1]);
+            addDot(x1 + counter, y, WHITE_BITS);
 	    counter++;
 	}
     } else {
         counter = 0;
         while(counter >= x1-x2) {
-            addDot(x2 + counter, y, [1,1,1]);
+            addDot(x2 + counter, y, WHITE_BITS);
 	    counter++;
 	}
     }
@@ -422,13 +460,14 @@ void drawVerticalLine(int x, int y1, int y2) {
     if(y2 >= y1){
         counter = 0;
         while(counter >= y2-y1) {
-            addDot(x, y1 + counter, [1,1,1]);
+            addDot(x, y1 + counter, WHITE_BITS);
             counter++;
+    }
 	}
     else {
         counter = 0;
         while(counter >= y1-y2) {
-            addDot(x, y2 + counter, [1,1,1]);
+            addDot(x, y2 + counter, WHITE_BITS);
 	    counter++;
 	}
     }
@@ -504,7 +543,7 @@ void drawThree(int x, int y, int scale) {
     drawVerticalThicken(scale, x, y, (y + scale*5));
 
     //Draws from (0, midpoint) to (max, midpoint)
-    drawHorizontalThicken(scale, x, (x + scale*3), (y + (scale*5 + 1)/2);
+    drawHorizontalThicken(scale, x, (x + scale*3), (y + (scale*5 + 1)/2));
 
     //Draws from (0, max) to (max, max)
     drawHorizontalThicken(scale, (x + scale*3), x, (y + scale*5));
@@ -515,7 +554,7 @@ void drawFour(int x, int y, int scale) {
     drawVerticalThicken(scale, x, y, (y + scale*5));
 
     //Draws from (0,midpoint) to (max, midpoint)
-    drawHorizontalThicken(scale, x, (x + scale*3), (y + (scale*5 + 1)/2);
+    drawHorizontalThicken(scale, x, (x + scale*3), (y + (scale*5 + 1)/2));
 
     //Draws from (max,0) to (max, midpoint)
     drawVerticalThicken(scale, (x + scale*3), y, (y + (scale*5 + 1)/2));
@@ -624,9 +663,67 @@ void render(void) {
         gpio_set(GPIOC, GPIO8); //Open the latch to show what is in the memory
         row++; 
     }
+
+    for (volatile unsigned int tmr=33333; tmr > 0; tmr--); //approx 30 frames per second
+
 }
 
 void onGoal(void) {
+    drawScores(); //alter panel data to show scores for each player.
+    render(); //draw new frame.
+    for (volatile unsigned int tmr=2e6; tmr > 0; tmr--); //Sleep for 2 seconds
+    winner = isGameOver();
+    justScored = 0;
+
+    switch (winner)
+    {
+    case 'A':
+        onGameOver();
+        break;
+    case 'B':
+        onGameOver();
+        break;
+    default:
+        break;
+    }
+    setupBall();
+    setupPaddles();
+    render(); //draw new frame for players to play next point
+
+
+}
+
+char isGameOver(void) {
+    if (paddle_A.score == 9){
+        return 'A';
+    } else if (paddle_B.score == 9) {
+        return 'B';
+    } else {
+        return 'X';
+    }
+}
+
+void onGameOver() {
+    if (winner == 'A'){
+        winner = 'X';
+        //flash score for A
+        //do cool stuff
+    } else if (winner == 'B') {
+        winner = 'X';
+        //flash score for B
+        //do cool stuff
+    } else {
+        printf("Somethign went very wrong.");
+        assert(1 == 0);
+    }
+
+    //wait for celebration to finish
+    //reset environment for next game to be played
+    paddle_A.score = 0;
+    paddle_B.score = 0;
+    setupBall();
+    setupPaddles();
+    render();
 
 }
 
@@ -636,9 +733,12 @@ void main(void) {
     initialSetup();
 
     while (winner == 'X') {
-        input();
+        readInput();
         update();
         render();
         winner = isGameOver();
     }
+
+    onGameOver();
+    main();
 }
