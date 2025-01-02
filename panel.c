@@ -76,6 +76,10 @@ void select_row(int row);
 void drawPaddleRight(int y);
 void drawPaddleLeft(int y);
 void drawBall(int x, int y);
+void drawHorizontalLine(int x1, int x2, int y);
+void drawVerticalLine(int x, int y1, int y2);
+void drawHorizontalThicken(scale, scale, int x1, int x2, int y);
+void drawVerticalThicken(scale, scaleint scale, , int x, int y1, int y2);
 void drawZero(int x, int y, int scale);
 void drawOne(int x, int y, int scale);
 void drawTwo(int x, int y, int scale);
@@ -430,7 +434,7 @@ void drawVerticalLine(int x, int y1, int y2) {
     }
 }
 
-void drawHorizontalThicken(int x1, int x2, int y) {
+void drawHorizontalThicken(int scale, int x1, int x2, int y) {
     int counter = 0;
     while(counter <= scale) {
         drawHorizontalLine(x1, x2, y + counter);
@@ -438,7 +442,7 @@ void drawHorizontalThicken(int x1, int x2, int y) {
     }
 }
 
-void drawVerticalThicken(int x, int y1, int y2) {
+void drawVerticalThicken(int scale, int x, int y1, int y2) {
     int counter = 0;
     while(counter <= scale) {
         drawVerticalLine(x + counter, y1, y2);
@@ -448,76 +452,149 @@ void drawVerticalThicken(int x, int y1, int y2) {
 
 //All these digits will be in a default 3x5 box that they are draw in,
 //but the scale of these can be modified
+//The coordinates all refer to the top righthand corner
 void drawZero(int x, int y, int scale) {
 
-    //There are four key points for drawing 0, (0,0), (0, max), (max, 0), (max, max)
+    //There are 6 key points for drawing, (0,0), (0, max),  (0, midpoint), (max, midpoint), (max, 0), and (max, max)
     //max is equal to scale*x_max or scale*y_max depending on which dimension its in
-    //which are 3 and 5 respectively.
+    //which are 3 and 5 respectively. The midpoint is therefore (y_max + 1)/2
     //Additionally, there should be 1xscale copies of each line, effectively thickening the line
     
     //Draws from (0,0) to (max, 0)
-    drawHorizontalThicken(x, (x + scale*3), y);
+    drawHorizontalThicken(scale, x, (x + scale*3), y);
 
     //Draws from (max, 0) to (max, max)
-    drawVerticalThicken((x + scale*3), y, (y + scale*5));
+    drawVerticalThicken(scale, (x + scale*3), y, (y + scale*5));
 
     //Draws from (max, max) to (0, max)
-    drawHorizontalThicken((x + scale*3), x, (y + scale*5));
+    drawHorizontalThicken(scale, (x + scale*3), x, (y + scale*5));
 	
     //Draws from (0, max) to (0,0)
-    drawVerticalThicken(x, (y + scale*5), y);
-    
+    drawVerticalThicken(scale, x, (y + scale*5), y);
 }
 
 void drawOne(int x, int y, int scale) {
     //Draw from (0, 0) to (0, max)
-    drawVerticalThicken(x, y, (y + scale*5));
-
+    drawVerticalThicken(scale, x, y, (y + scale*5));
 }
 
 void drawTwo(int x, int y, int scale) {
     //Draws from (0,0) to (max,0)
-    drawHorizontalThicken(x, (x + scale*3), y);
+    drawHorizontalThicken(scale, x, (x + scale*3), y);
 
     //Draws from (0,0) to (0, midpoint)
     //To find the midpoint, we can add 1 and divide by 2
-    drawVerticalThicken(x, y, (y + scale*5 + 1)/2);
+    drawVerticalThicken(scale, x, y, (y + (scale*5 + 1)/2));
 
     //Draws from (0, midpoint) to (max, midpoint)
-    drawHorizontalThicken(x, (x + scale*3) (y + scale*5 + 1)/2);
+    drawHorizontalThicken(scale, x, (x + scale*3), (y + (scale*5 + 1)/2));
 
     //Draws from (max, midpoint) to (max, max)
+    drawVerticalThicken(scale, x + scale*3,  (y + (scale*5 + 1)/2),  (y + scale*5));
 
     //Draws from (max, max) to (0, max)
-
+    drawHorizontalThicken(scale, (x + scale*3), x, (y + scale*5));
 }
 
 void drawThree(int x, int y, int scale) {
+    //Draws from (0,0) to (max, 0)
+    drawHorizontalThicken(scale, x, (x + scale*3), y);
 
+    //Draws from (0,0) to (0, max)
+    drawVerticalThicken(scale, x, y, (y + scale*5));
+
+    //Draws from (0, midpoint) to (max, midpoint)
+    drawHorizontalThicken(scale, x, (x + scale*3), (y + (scale*5 + 1)/2);
+
+    //Draws from (0, max) to (max, max)
+    drawHorizontalThicken(scale, (x + scale*3), x, (y + scale*5));
 }
 
 void drawFour(int x, int y, int scale) {
+    //Draws from (0,0) to (0,max)
+    drawVerticalThicken(scale, x, y, (y + scale*5));
 
+    //Draws from (0,midpoint) to (max, midpoint)
+    drawHorizontalThicken(scale, x, (x + scale*3), (y + (scale*5 + 1)/2);
+
+    //Draws from (max,0) to (max, midpoint)
+    drawVerticalThicken(scale, (x + scale*3), y, (y + (scale*5 + 1)/2));
 }
 
 void drawFive(int x, int y, int scale) {
+    //Draws from (0,0) to (max,0)
+    drawHorizontalThicken(scale, x, (x + scale*3), y);
 
+    //Draws from (max,0) to (max,midpoint)
+    drawVerticalThicken(scale, (x + scale*3), y, (y + (scale*5 + 1)/2));
+
+    //Draws from (max,midpoint) to (0,midpoint)
+    drawHorizontalThicken(scale, x, (x + scale*3), (y + (scale*5 + 1)/2));
+
+    //Draws from (0,midpoint) to (0,max)
+    drawVerticalLine(x, (y + (scale*5 + 1)/2), (y + scale*5));
+
+    //Draws from (0,max) to (max,max)
+    drawHorizontalThicken(scale, (x + scale*3), x, (y + scale*5));
 }
 
 void drawSix(int x, int y, int scale) {
+    //Draws from (0,0) to (max,0)
+    drawHorizontalThicken(scale, x, (x + scale*3), y);
 
+    //Draws from (max,0) to (max,max)
+    drawVerticalThicken(scale, (x + scale*3), y, (y + scale*5));
+
+    //Draws from (max, midpoint) to (0,midpoint)
+    drawHorizontalThicken(scale, x, (x + scale*3), (y + (scale*5 + 1)/2));
+
+    //Draws from (0, midpoint) to (0,max)
+    drawVerticalLine(x, (y + (scale*5 + 1)/2), (y + scale*5));
+
+    //Draws from (0,max) to (max,max)
+    drawHorizontalThicken(scale, (x + scale*3), x, (y + scale*5));
 }
 
 void drawSeven(int x, int y, int scale) {
+    //Draws from (0,0) to (max,0)
+    drawHorizontalThicken(scale, x, (x + scale*3), y);
 
+    //Draws from (0,0) to (0,max)
+    drawVerticalThicken(scale, x, y, (y + scale*5));
 }
 
 void drawEight(int x, int y, int scale) {
+    //Draws from (0,0) to (0,max)
+    drawVerticalThicken(scale, x, y, (y + scale*5));
 
+    //Draws from (0,0) to (max,0)
+    drawHorizontalThicken(scale, x, (x + scale*3), y);
+
+    //Draws from (0,midpoint) to (max,midpoint)
+    drawHorizontalThicken(scale, x, (x + scale*3), (y + (scale*5 + 1)/2));
+
+    //Draws from (0,max) to (max,max)
+    drawHorizontalThicken(scale, (x + scale*3), x, (y + scale*5));
+
+    //Draws from (max,0) to (max,max)
+    drawVerticalThicken(scale, (x + scale*3), y, (y + scale*5));
 }
 
 void drawNine(int x, int y, int scale) {
+    //Draws from (0,0) to (0,max)
+    drawVerticalThicken(scale, x, y, (y + scale*5));
 
+    //Draws from (0,0) to (max,0)
+    drawHorizontalThicken(scale, x, (x + scale*3), y);
+
+    //Draws from (max,0) to (max, midpoint)
+    drawVerticalThicken(scale, (x + scale*3), y, (y + (scale*5 + 1)/2));
+
+    //Draws from (max, midpoint) to (0, midpoint)
+    drawHorizontalThicken(scale, x, (x + scale*3), (y + (scale*5 + 1)/2));
+
+    //Draws from (0,max) to (max,max)
+    drawHorizontalThicken(scale, (x + scale*3), x, (y + scale*5));
 }
 
 void render(void) {
