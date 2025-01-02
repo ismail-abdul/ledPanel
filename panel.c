@@ -75,7 +75,17 @@ void clear_data(void);
 void select_row(int row);
 void drawPaddleRight(int y);
 void drawPaddleLeft(int y);
-void drawBall(int y, int x);
+void drawBall(int x, int y);
+void drawZero(int x, int y, int scale);
+void drawOne(int x, int y, int scale);
+void drawTwo(int x, int y, int scale);
+void drawThree(int x, int y, int scale);
+void drawFour(int x, int y, int scale);
+void drawFive(int x, int y, int scale);
+void drawSix(int x, int y, int scale);
+void drawSeven(int x, int y, int scale);
+void drawEight(int x, int y, int scale);
+void drawNine(int x, int y, int scale);
 void render(void);
 void onGoal(void);
 void main(void);
@@ -194,8 +204,6 @@ void readInput(void) {
 
     paddle_B.Velocity.y = (up_paddle_B < 205) ? 0 : (up_paddle_B < 2049 ? 1 : 2);
     paddle_B.Velocity.y = (down_paddle_B < 205) ? 0 : (down_paddle_B < 2049 ? -1 : -2);
-
-	printf("Finished reading & interpretting input from joysticks!");
 }
 
 //Overwrite the display data where necessary.
@@ -265,7 +273,6 @@ void update(void) {
 	
 }
 
-
 void input(void) {
 	inputPreProcessing();
 	readInput(); //should there be a public variable that should be getting updated? Or should it just be updating the location and speed variables?
@@ -293,26 +300,6 @@ void addDot(int x, int y, int[3] col) {
 }
 
 /*int removeDot for manipulating objects rather than just clearing the array*/
-
-int Paddles(int y) {
-    int counter = 6;
-
-    while(counter > 0) {
-        int x = 34;
-        if (y > 16) {
-            y = y % 16;
-            x += 32;
-        }
-        if (y > 32) {
-            x -= 32;
-        }
-
-        addDot(x, y, [1,1,1]);
-        y++;
-        counter--;
-    }
-    return 0;
-}
 
 int clear_row(void) {
     for (int i = 0; i<(192); i++) {
@@ -376,6 +363,7 @@ void select_row(int row) {
     }
 }
 
+//The following functions are all for "drawing" a shape onto the screen
 void drawPaddleRight(int y) {
     int counter = 4; //This is the height of each paddle
     int x = 0; //This is the column the paddle will travel in
@@ -406,6 +394,64 @@ void drawBall(int x, int y) {
     addDot(y+1, x,   [1,1,1]);
     addDot(y,   x+1, [1,1,1]);
     addDot(y+1, x+1, [1,1,1])
+}
+
+//All these digits will imagine a default 3x5 box that they are draw in,
+//but the scale of these can be modified
+void drawZero{int x, int y, int scale) {
+
+    //This currently draws a cube of 3x5xscale size
+    //TODO: hollow out the cube to get the number required
+    //TODO: use the modulus operation to figure it out for each number
+    int counter1;
+    int counter2;
+    counter1 = 0;
+    counter2 = 0;
+    while(counter1 < 3*scale) {
+        while(counter2 < 5*scale) {
+            addDot(x + counter1, y + counter2);
+            counter2++;
+        }
+	counter1++;
+    }
+
+    
+}
+
+void drawOne(int x, int y, int scale) {
+
+}
+
+void drawTwo(int x, int y, int scale) {
+
+}
+
+void drawThree(int x, int y, int scale) {
+
+}
+
+void drawFour(int x, int y, int scale) {
+
+}
+
+void drawFive(int x, int y, int scale) {
+
+}
+
+void drawSix(int x, int y, int scale) {
+
+}
+
+void drawSeven(int x, int y, int scale) {
+
+}
+
+void drawEight(int x, int y, int scale) {
+
+}
+
+void drawNine(int x, int y, int scale) {
+
 }
 
 void render(void) {
