@@ -75,7 +75,21 @@ void clear_data(void);
 void select_row(int row);
 void drawPaddleRight(int y);
 void drawPaddleLeft(int y);
-void drawBall(int y, int x);
+void drawBall(int x, int y);
+void drawHorizontalLine(int x1, int x2, int y);
+void drawVerticalLine(int x, int y1, int y2);
+void drawHorizontalThicken(scale, scale, int x1, int x2, int y);
+void drawVerticalThicken(scale, scaleint scale, , int x, int y1, int y2);
+void drawZero(int x, int y, int scale);
+void drawOne(int x, int y, int scale);
+void drawTwo(int x, int y, int scale);
+void drawThree(int x, int y, int scale);
+void drawFour(int x, int y, int scale);
+void drawFive(int x, int y, int scale);
+void drawSix(int x, int y, int scale);
+void drawSeven(int x, int y, int scale);
+void drawEight(int x, int y, int scale);
+void drawNine(int x, int y, int scale);
 void render(void);
 void onGoal(void);
 void main(void);
@@ -194,8 +208,6 @@ void readInput(void) {
 
     paddle_B.Velocity.y = (up_paddle_B < 205) ? 0 : (up_paddle_B < 2049 ? 1 : 2);
     paddle_B.Velocity.y = (down_paddle_B < 205) ? 0 : (down_paddle_B < 2049 ? -1 : -2);
-
-	printf("Finished reading & interpretting input from joysticks!");
 }
 
 //Overwrite the display data where necessary.
@@ -265,7 +277,6 @@ void update(void) {
 	
 }
 
-
 void input(void) {
 	inputPreProcessing();
 	readInput(); //should there be a public variable that should be getting updated? Or should it just be updating the location and speed variables?
@@ -293,26 +304,6 @@ void addDot(int x, int y, int[3] col) {
 }
 
 /*int removeDot for manipulating objects rather than just clearing the array*/
-
-int Paddles(int y) {
-    int counter = 6;
-
-    while(counter > 0) {
-        int x = 34;
-        if (y > 16) {
-            y = y % 16;
-            x += 32;
-        }
-        if (y > 32) {
-            x -= 32;
-        }
-
-        addDot(x, y, [1,1,1]);
-        y++;
-        counter--;
-    }
-    return 0;
-}
 
 int clear_row(void) {
     for (int i = 0; i<(192); i++) {
@@ -376,6 +367,7 @@ void select_row(int row) {
     }
 }
 
+//The following functions are all for "drawing" a shape onto the screen
 void drawPaddleRight(int y) {
     int counter = 4; //This is the height of each paddle
     int x = 0; //This is the column the paddle will travel in
@@ -406,6 +398,203 @@ void drawBall(int x, int y) {
     addDot(y+1, x,   [1,1,1]);
     addDot(y,   x+1, [1,1,1]);
     addDot(y+1, x+1, [1,1,1])
+}
+
+void drawHorizontalLine(int x1, int x2, int y) {
+    int counter;
+    if(x2 >= x1){
+        counter = 0;
+        while(counter >= x2-x1) {
+            addDot(x1 + counter, y, [1,1,1]);
+	    counter++;
+	}
+    } else {
+        counter = 0;
+        while(counter >= x1-x2) {
+            addDot(x2 + counter, y, [1,1,1]);
+	    counter++;
+	}
+    }
+}
+
+void drawVerticalLine(int x, int y1, int y2) {
+    int counter;
+    if(y2 >= y1){
+        counter = 0;
+        while(counter >= y2-y1) {
+            addDot(x, y1 + counter, [1,1,1]);
+            counter++;
+	}
+    else {
+        counter = 0;
+        while(counter >= y1-y2) {
+            addDot(x, y2 + counter, [1,1,1]);
+	    counter++;
+	}
+    }
+}
+
+void drawHorizontalThicken(int scale, int x1, int x2, int y) {
+    int counter = 0;
+    while(counter <= scale) {
+        drawHorizontalLine(x1, x2, y + counter);
+	counter++;
+    }
+}
+
+void drawVerticalThicken(int scale, int x, int y1, int y2) {
+    int counter = 0;
+    while(counter <= scale) {
+        drawVerticalLine(x + counter, y1, y2);
+	counter++;
+    }
+}
+
+//All these digits will be in a default 3x5 box that they are draw in,
+//but the scale of these can be modified
+//The coordinates all refer to the top righthand corner
+void drawZero(int x, int y, int scale) {
+
+    //There are 6 key points for drawing, (0,0), (0, max),  (0, midpoint), (max, midpoint), (max, 0), and (max, max)
+    //max is equal to scale*x_max or scale*y_max depending on which dimension its in
+    //which are 3 and 5 respectively. The midpoint is therefore (y_max + 1)/2
+    //Additionally, there should be 1xscale copies of each line, effectively thickening the line
+    
+    //Draws from (0,0) to (max, 0)
+    drawHorizontalThicken(scale, x, (x + scale*3), y);
+
+    //Draws from (max, 0) to (max, max)
+    drawVerticalThicken(scale, (x + scale*3), y, (y + scale*5));
+
+    //Draws from (max, max) to (0, max)
+    drawHorizontalThicken(scale, (x + scale*3), x, (y + scale*5));
+	
+    //Draws from (0, max) to (0,0)
+    drawVerticalThicken(scale, x, (y + scale*5), y);
+}
+
+void drawOne(int x, int y, int scale) {
+    //Draw from (0, 0) to (0, max)
+    drawVerticalThicken(scale, x, y, (y + scale*5));
+}
+
+void drawTwo(int x, int y, int scale) {
+    //Draws from (0,0) to (max,0)
+    drawHorizontalThicken(scale, x, (x + scale*3), y);
+
+    //Draws from (0,0) to (0, midpoint)
+    //To find the midpoint, we can add 1 and divide by 2
+    drawVerticalThicken(scale, x, y, (y + (scale*5 + 1)/2));
+
+    //Draws from (0, midpoint) to (max, midpoint)
+    drawHorizontalThicken(scale, x, (x + scale*3), (y + (scale*5 + 1)/2));
+
+    //Draws from (max, midpoint) to (max, max)
+    drawVerticalThicken(scale, x + scale*3,  (y + (scale*5 + 1)/2),  (y + scale*5));
+
+    //Draws from (max, max) to (0, max)
+    drawHorizontalThicken(scale, (x + scale*3), x, (y + scale*5));
+}
+
+void drawThree(int x, int y, int scale) {
+    //Draws from (0,0) to (max, 0)
+    drawHorizontalThicken(scale, x, (x + scale*3), y);
+
+    //Draws from (0,0) to (0, max)
+    drawVerticalThicken(scale, x, y, (y + scale*5));
+
+    //Draws from (0, midpoint) to (max, midpoint)
+    drawHorizontalThicken(scale, x, (x + scale*3), (y + (scale*5 + 1)/2);
+
+    //Draws from (0, max) to (max, max)
+    drawHorizontalThicken(scale, (x + scale*3), x, (y + scale*5));
+}
+
+void drawFour(int x, int y, int scale) {
+    //Draws from (0,0) to (0,max)
+    drawVerticalThicken(scale, x, y, (y + scale*5));
+
+    //Draws from (0,midpoint) to (max, midpoint)
+    drawHorizontalThicken(scale, x, (x + scale*3), (y + (scale*5 + 1)/2);
+
+    //Draws from (max,0) to (max, midpoint)
+    drawVerticalThicken(scale, (x + scale*3), y, (y + (scale*5 + 1)/2));
+}
+
+void drawFive(int x, int y, int scale) {
+    //Draws from (0,0) to (max,0)
+    drawHorizontalThicken(scale, x, (x + scale*3), y);
+
+    //Draws from (max,0) to (max,midpoint)
+    drawVerticalThicken(scale, (x + scale*3), y, (y + (scale*5 + 1)/2));
+
+    //Draws from (max,midpoint) to (0,midpoint)
+    drawHorizontalThicken(scale, x, (x + scale*3), (y + (scale*5 + 1)/2));
+
+    //Draws from (0,midpoint) to (0,max)
+    drawVerticalLine(x, (y + (scale*5 + 1)/2), (y + scale*5));
+
+    //Draws from (0,max) to (max,max)
+    drawHorizontalThicken(scale, (x + scale*3), x, (y + scale*5));
+}
+
+void drawSix(int x, int y, int scale) {
+    //Draws from (0,0) to (max,0)
+    drawHorizontalThicken(scale, x, (x + scale*3), y);
+
+    //Draws from (max,0) to (max,max)
+    drawVerticalThicken(scale, (x + scale*3), y, (y + scale*5));
+
+    //Draws from (max, midpoint) to (0,midpoint)
+    drawHorizontalThicken(scale, x, (x + scale*3), (y + (scale*5 + 1)/2));
+
+    //Draws from (0, midpoint) to (0,max)
+    drawVerticalLine(x, (y + (scale*5 + 1)/2), (y + scale*5));
+
+    //Draws from (0,max) to (max,max)
+    drawHorizontalThicken(scale, (x + scale*3), x, (y + scale*5));
+}
+
+void drawSeven(int x, int y, int scale) {
+    //Draws from (0,0) to (max,0)
+    drawHorizontalThicken(scale, x, (x + scale*3), y);
+
+    //Draws from (0,0) to (0,max)
+    drawVerticalThicken(scale, x, y, (y + scale*5));
+}
+
+void drawEight(int x, int y, int scale) {
+    //Draws from (0,0) to (0,max)
+    drawVerticalThicken(scale, x, y, (y + scale*5));
+
+    //Draws from (0,0) to (max,0)
+    drawHorizontalThicken(scale, x, (x + scale*3), y);
+
+    //Draws from (0,midpoint) to (max,midpoint)
+    drawHorizontalThicken(scale, x, (x + scale*3), (y + (scale*5 + 1)/2));
+
+    //Draws from (0,max) to (max,max)
+    drawHorizontalThicken(scale, (x + scale*3), x, (y + scale*5));
+
+    //Draws from (max,0) to (max,max)
+    drawVerticalThicken(scale, (x + scale*3), y, (y + scale*5));
+}
+
+void drawNine(int x, int y, int scale) {
+    //Draws from (0,0) to (0,max)
+    drawVerticalThicken(scale, x, y, (y + scale*5));
+
+    //Draws from (0,0) to (max,0)
+    drawHorizontalThicken(scale, x, (x + scale*3), y);
+
+    //Draws from (max,0) to (max, midpoint)
+    drawVerticalThicken(scale, (x + scale*3), y, (y + (scale*5 + 1)/2));
+
+    //Draws from (max, midpoint) to (0, midpoint)
+    drawHorizontalThicken(scale, x, (x + scale*3), (y + (scale*5 + 1)/2));
+
+    //Draws from (0,max) to (max,max)
+    drawHorizontalThicken(scale, (x + scale*3), x, (y + scale*5));
 }
 
 void render(void) {
