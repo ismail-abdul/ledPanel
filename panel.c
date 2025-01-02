@@ -396,9 +396,18 @@ void drawBall(int x, int y) {
     addDot(y+1, x+1, [1,1,1])
 }
 
+void drawHorizontalLine(int x1, int x2) {
+    int counter;
+    if(x2 >= x1){
+        counter = 0;
+        while(counter > x2-x1) {
+            addDot(x1 + 
+	}
+}
+
 //All these digits will imagine a default 3x5 box that they are draw in,
 //but the scale of these can be modified
-void drawZero{int x, int y, int scale) {
+void drawZero(int x, int y, int scale) {
 
     //This currently draws a cube of 3x5xscale size
     //TODO: hollow out the cube to get the number required
@@ -414,6 +423,11 @@ void drawZero{int x, int y, int scale) {
         }
 	counter1++;
     }
+
+    //There are four key points for 0, (0,0), (0, max), (max, 0), (max, max)
+    //max is equal to scale*x_max or scale*y_max depending on which dimension its in
+    //which are 3 and 5 respectively.
+    //Additionally, there should be 1xscale copies of each line, effectively thickening the line
 
     
 }
