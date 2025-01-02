@@ -430,38 +430,65 @@ void drawVerticalLine(int x, int y1, int y2) {
     }
 }
 
+void drawHorizontalThicken(int x1, int x2, int y) {
+    int counter = 0;
+    while(counter <= scale) {
+        drawHorizontalLine(x1, x2, y + counter);
+	counter++;
+    }
+}
+
+void drawVerticalThicken(int x, int y1, int y2) {
+    int counter = 0;
+    while(counter <= scale) {
+        drawVerticalLine(x + counter, y1, y2);
+	counter++;
+    }
+}
+
 //All these digits will be in a default 3x5 box that they are draw in,
 //but the scale of these can be modified
 void drawZero(int x, int y, int scale) {
 
-    //This currently draws a cube of 3x5xscale size
-    //TODO: hollow out the cube to get the number required
-    //TODO: use the modulus operation to figure it out for each number
-    int counter1;
-    int counter2;
-    counter1 = 0;
-    counter2 = 0;
-    while(counter1 < 3*scale) {
-        while(counter2 < 5*scale) {
-            addDot(x + counter1, y + counter2, [1,1,1]);
-            counter2++;
-        }
-	counter1++;
-    }
-
-    //There are four key points for 0, (0,0), (0, max), (max, 0), (max, max)
+    //There are four key points for drawing 0, (0,0), (0, max), (max, 0), (max, max)
     //max is equal to scale*x_max or scale*y_max depending on which dimension its in
     //which are 3 and 5 respectively.
     //Additionally, there should be 1xscale copies of each line, effectively thickening the line
+    
+    //Draws from (0,0) to (max, 0)
+    drawHorizontalThicken(x, (x + scale*3), y);
 
+    //Draws from (max, 0) to (max, max)
+    drawVerticalThicken((x + scale*3), y, (y + scale*5));
+
+    //Draws from (max, max) to (0, max)
+    drawHorizontalThicken((x + scale*3), x, (y + scale*5));
+	
+    //Draws from (0, max) to (0,0)
+    drawVerticalThicken(x, (y + scale*5), y);
     
 }
 
 void drawOne(int x, int y, int scale) {
+    //Draw from (0, 0) to (0, max)
+    drawVerticalThicken(x, y, (y + scale*5));
 
 }
 
 void drawTwo(int x, int y, int scale) {
+    //Draws from (0,0) to (max,0)
+    drawHorizontalThicken(x, (x + scale*3), y);
+
+    //Draws from (0,0) to (0, midpoint)
+    //To find the midpoint, we can add 1 and divide by 2
+    drawVerticalThicken(x, y, (y + scale*5 + 1)/2);
+
+    //Draws from (0, midpoint) to (max, midpoint)
+    drawHorizontalThicken(x, (x + scale*3) (y + scale*5 + 1)/2);
+
+    //Draws from (max, midpoint) to (max, max)
+
+    //Draws from (max, max) to (0, max)
 
 }
 
