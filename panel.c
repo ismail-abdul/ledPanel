@@ -41,7 +41,8 @@ Player A is on the left side (i.e x = 31) and Player B is on the right side.
 
 //Array used to store all frame data
 int renderingData[16][192];
-int WHITE_BITS[3] = {1,1,1}; //Used as an argument when wanting to display a white pixel on the LED Panel
+int WHITE_BITS[3] = {1,1,1}; //Used as an argument when wanting to display a white pixel on the LED Panel, BGR format
+int PURPLE_BITS[3] = {1,0,1}; //For purple instead, for contrast
 
 
 //struct to represent the velocity vector
@@ -317,7 +318,6 @@ void update(void) {
         printf("Unexpected vales for ball co-ordinates");
         assert(1 == 0);
     }
-
 }
 
 //This function accepts coordinates as you would see if you labelled the actual panel, 32x32
@@ -430,12 +430,63 @@ void drawPaddleLeft(int y) {
     }
 }
 
-void drawBall(int x, int y) {
-    //Add a dot in each pixel to make the ball
-    addDot(y,   x,   WHITE_BITS);
-    addDot(y+1, x,   WHITE_BITS);
-    addDot(y,   x+1, WHITE_BITS);
-    addDot(y+1, x+1, WHITE_BITS)
+void drawBall(void) {
+    //Add a dot in four pixels to make the ball
+
+    //Check each pixel doesn't overlap     
+    int y;
+    int x;
+    int check;
+		
+    y = ball.y % 16;
+    check = ball.y % 32;
+    if(y != check) {
+        x = ball.x + 92;
+    }			
+	
+
+    //This checks if the Green pixel is activated
+    if(renderingData[y][192 - x + 32] == 1) {
+	addDot(ball.y,   ball.x,   PURPLE_BITS);
+    } else {
+        addDot(ball.y,   ball.x,   WHITE_BITS);
+    }
+
+     y = (ball.y + 1) % 16;
+    check = ball.y % 32;
+    if(y != check) {
+        x = ball.x + 92;
+    }	
+	
+    if(renderingData[y][192 - x + 32] == 1) {
+        addDot(ball.y+1, ball.x,   PURPLE_BITS);
+    } else {
+        addDot(ball.y+1, ball.x,   WHITE_BITS);
+    }
+	
+    y = ball.y % 16;
+    check = ball.y % 32;
+    if(y != check) {
+        x = ball.x + 92 + 1;
+    }	
+	
+    if(renderingData[y][192 - x + 32] == 1) {
+        addDot(ball.y,   ball.x+1, WHITE_BITS);
+    } else {
+        addDot(ball.y,   ball.x+1, WHITE_BITS);
+    }
+	
+    y = (ball.y + 1) % 16;
+    check = ball.y % 32;
+    if(y != check) {
+        x = ball.x + 92 + 1;
+    }
+	
+    if(renderingData[y][192 - x + 32] == 1) {
+        addDot(ball.y+1, ball.x+1, WHITE_BITS);
+    } else {
+        addDot(ball.y+1, ball.x+1, WHITE_BITS);
+    }
 }
 
 void drawHorizontalLine(int x1, int x2, int y) {
