@@ -471,7 +471,7 @@ void drawBall(void) {
     }	
 	
     if(renderingData[y][192 - x + 32] == 1) {
-        addDot(ball.y,   ball.x+1, WHITE_BITS);
+        addDot(ball.y,   ball.x+1, PURPLE_BITS);
     } else {
         addDot(ball.y,   ball.x+1, WHITE_BITS);
     }
@@ -483,7 +483,7 @@ void drawBall(void) {
     }
 	
     if(renderingData[y][192 - x + 32] == 1) {
-        addDot(ball.y+1, ball.x+1, WHITE_BITS);
+        addDot(ball.y+1, ball.x+1, PURPLE_BITS);
     } else {
         addDot(ball.y+1, ball.x+1, WHITE_BITS);
     }
